@@ -1,0 +1,30 @@
+[project]
+name = "vta-collection"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ilya O. Yurev",email = "i.o.yurev@yandex.ru"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pyside6 (>=6.9.0,<7.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "pyserial (>=3.5,<4.0)",
+    "pydantic (>=2.11.3,<3.0.0)",
+    "pglive (>=0.8.3,<0.9.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+autoflake = "^2.3.1"
+isort = "^6.0.1"
+ruff = "^0.11.6"
+mypy = "^1.15.0"
+types-pyserial = "^3.5.0.20250326"
+pre-commit = "^4.2.0"
+commitizen = "^4.6.0"
