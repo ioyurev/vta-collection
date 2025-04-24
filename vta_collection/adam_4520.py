@@ -1,6 +1,6 @@
 import serial
 from loguru import logger as log
-
+from vta_collection.config import config
 from vta_collection.adam_4011 import Adam4011
 from vta_collection.adam_4021 import Adam4021
 from vta_collection.base_instrument import BaseInstrument
@@ -15,7 +15,7 @@ class Adam4520API(BaseInstrument):
         if timeout is None:
             timeout = 0.1
         super().__init__(
-            baudrate=9600,
+            baudrate=config.adam_baudrate,
             timeout=timeout,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,

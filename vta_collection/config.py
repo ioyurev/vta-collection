@@ -34,6 +34,7 @@ class Config(BaseModel):
     default_speed: int = 5
     adam4011_address: int = 1
     adam4021_address: int = 3
+    adam_baudrate: int = 9600
 
     @classmethod
     def from_file(cls, path: Path):
