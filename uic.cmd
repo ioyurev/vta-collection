@@ -3,3 +3,5 @@ pyside6-uic assets\NewMeasurementDialog.ui > vta_collection/ui/new_measurement.p
 
 autoflake -i --remove-all-unused-imports vta_collection/ui/main_window.py
 autoflake -i --remove-all-unused-imports vta_collection/ui/new_measurement.py
+
+pyside6-rcc assets\resources.qrc > vta_collection\ui\resources_rc.py

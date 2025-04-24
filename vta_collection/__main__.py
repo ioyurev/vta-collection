@@ -13,6 +13,7 @@ from vta_collection.main_window import MainWindow
 from vta_collection.measurement import Measurement
 from vta_collection.new_measurement_window import NewMeasurementWindow
 from vta_collection.serial_base import get_serial_ports
+from vta_collection.ui import resources_rc  # noqa: F401
 
 
 def find_adam(ports: list[str], device: Adam4520):
