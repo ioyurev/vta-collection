@@ -27,7 +27,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     w_emf: LivePlotWidget
     w_temp: LivePlotWidget
     w_out: LivePlotWidget
-    cal: Calibration
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -59,16 +58,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def stop_heating(self):
         self.sb_speed.setValue(0)
 
-    def update_display(self, data: DataPoint):
-        self.label_input.setText(f"{data.emf:.3f}")
-        self.label_output.setText(f"{data.output:.3f}")
-        self.label_temp.setText(f"{self.cal.get_value(data.emf):.1f}")
-
     def update_cal_polynom(self, cal: Calibration):
         self.label_calibration.setText(cal.to_formule_str())
 
     def set_meas(self, meas: Measurement):
-        self.cal = meas.cal
+        if meas.cal is not None:
+            cal = meas.cal
+
+            def update_display(data: DataPoint):
+                self.label_input.setText(f"{data.emf:.3f}")
+                self.label_output.setText(f"{data.output:.3f}")
+                self.label_temp.setText(f"{cal.get_value(data.emf):.1f}")
+        else:
+
+            def update_display(data: DataPoint):
+                self.label_input.setText(f"{data.emf:.3f}")
+                self.label_output.setText(f"{data.output:.3f}")
+
         clear_layout(self.plot_layout)
         if hasattr(self, "w_emf") and self.w_emf:
             del self.w_emf
@@ -85,7 +91,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         with warnings.catch_warnings(action="ignore"):
             self.btn_output.clicked.disconnect()
         self.btn_output.clicked.connect(self.w_out.show)
-        meas.data_ready.connect(self.update_display)
+        with warnings.catch_warnings(action="ignore"):
+            meas.data_ready.disconnect()
+        meas.data_ready.connect(update_display)
 
         self.label_operator.setText(f"Operator: <b>{meas.metadata.operator}</b>")
         self.label_sample.setText(f"Sample: <b>{meas.metadata.sample}</b>")
