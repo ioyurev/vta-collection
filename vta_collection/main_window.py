@@ -5,6 +5,7 @@ from loguru import logger as log
 from pglive.sources.live_plot_widget import LivePlotWidget
 from PySide6 import QtCore, QtWidgets
 
+from vta_collection.about_window import AboutWindow
 from vta_collection.calibration import Calibration
 from vta_collection.config import config
 from vta_collection.heater import DataPoint
@@ -38,6 +39,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.label_temp.setVisible(False)
         self.label_calibration.setVisible(False)
         self.sb_speed.setValue(config.default_speed)
+        self.about_window = AboutWindow(parent=self)
+        self.action_about.triggered.connect(self.about_window.show)
 
     def new_meas(self):
         self.action_new.setEnabled(False)

@@ -28,3 +28,10 @@ mypy = "^1.15.0"
 types-pyserial = "^3.5.0.20250326"
 pre-commit = "^4.2.0"
 commitizen = "^4.6.0"
+
+[tool.commitizen]
+version = "0.1.0"
+version_files = [
+    "vta_collection/__version__.py",
+    "pyproject.toml:version"
+]
