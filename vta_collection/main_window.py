@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     w_emf: LivePlotWidget
     w_temp: LivePlotWidget
     w_out: LivePlotWidget
+    cal: Calibration
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -34,6 +35,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_start.clicked.connect(self.start_loop)
         self.btn_stop.clicked.connect(self.stop_loop)
         self.btn_stop_heat.clicked.connect(self.stop_heating)
+        self.label_2.setVisible(False)
+        self.label_temp.setVisible(False)
         self.label_calibration.setVisible(False)
         self.sb_speed.setValue(config.default_speed)
 
@@ -59,11 +62,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def update_display(self, data: DataPoint):
         self.label_input.setText(f"{data.emf:.3f}")
         self.label_output.setText(f"{data.output:.3f}")
+        self.label_temp.setText(f"{self.cal.get_value(data.emf):.1f}")
 
     def update_cal_polynom(self, cal: Calibration):
         self.label_calibration.setText(cal.to_formule_str())
 
     def set_meas(self, meas: Measurement):
+        self.cal = meas.cal
         clear_layout(self.plot_layout)
         if hasattr(self, "w_emf") and self.w_emf:
             del self.w_emf
@@ -86,10 +91,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.label_sample.setText(f"Sample: <b>{meas.metadata.sample}</b>")
         if meas.cal is not None:
             self.plot_layout.addWidget(self.w_temp)
+            self.label_2.setVisible(True)
+            self.label_temp.setVisible(True)
             self.label_calibration.setVisible(True)
             self.label_calibration.setText(f"<b>{meas.cal.to_formule_str()}</b>")
         else:
             self.plot_layout.addWidget(self.w_emf)
+            self.label_2.setVisible(False)
+            self.label_temp.setVisible(False)
             self.label_calibration.setVisible(False)
 
     # def closeEvent(self, event):
