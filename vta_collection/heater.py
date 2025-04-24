@@ -5,8 +5,8 @@ import warnings
 from loguru import logger as log
 from PySide6 import QtCore
 
-from vta_collection.Adam4011 import Adam4011
-from vta_collection.Adam4021 import Adam4021
+from vta_collection.adam_4011 import Adam4011
+from vta_collection.adam_4021 import Adam4021
 from vta_collection.config import config
 from vta_collection.measurement import DataPoint, Measurement
 

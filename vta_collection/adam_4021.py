@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from vta_collection.AdamBase import AdamBase, AdamBaseCommands
+from vta_collection.adam_base import AdamBase, AdamBaseCommands
 
 if TYPE_CHECKING:
-    from vta_collection.Adam4520 import Adam4520API
+    from vta_collection.adam_4520 import Adam4520API
 
 
 class Adam4021Commands(AdamBaseCommands):
@@ -11,7 +11,7 @@ class Adam4021Commands(AdamBaseCommands):
         super().__init__(address)
 
         self.SET_OUTPUT = b"#AA".replace(b"AA", address)
-        self.MEAS_OUTPUT = b"#AA8".replace(b"AA", address)
+        self.CURRENT_OUTPUT = b"$AA8".replace(b"AA", address)
 
 
 class Adam4021(AdamBase):
@@ -29,4 +29,4 @@ class Adam4021(AdamBase):
         )
 
     def meas_output(self):
-        return self.converter.get_bytes_answer(self.CMD.MEAS_OUTPUT)
+        return self.converter.get_bytes_answer(self.CMD.CURRENT_OUTPUT)

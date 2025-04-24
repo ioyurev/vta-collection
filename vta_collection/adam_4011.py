@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from vta_collection.Adam4011Config import Adam4011Config
-from vta_collection.AdamBase import AdamBase, AdamBaseCommands
+from vta_collection.adam_4011_config import Adam4011Config
+from vta_collection.adam_base import AdamBase, AdamBaseCommands
 
 if TYPE_CHECKING:
-    from vta_collection.Adam4520 import Adam4520API
+    from vta_collection.adam_4520 import Adam4520API
 
 
 class Adam4011Commands(AdamBaseCommands):

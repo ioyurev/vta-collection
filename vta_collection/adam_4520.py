@@ -1,8 +1,8 @@
 import serial
 from loguru import logger as log
 
-from vta_collection.Adam4011 import Adam4011
-from vta_collection.Adam4021 import Adam4021
+from vta_collection.adam_4011 import Adam4011
+from vta_collection.adam_4021 import Adam4021
 from vta_collection.base_instrument import BaseInstrument
 
 

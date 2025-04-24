@@ -3,9 +3,9 @@ import sys
 from loguru import logger as log
 from PySide6 import QtWidgets
 
-from vta_collection.Adam4011 import Adam4011
-from vta_collection.Adam4021 import Adam4021
-from vta_collection.Adam4520 import Adam4520
+from vta_collection.adam_4011 import Adam4011
+from vta_collection.adam_4021 import Adam4021
+from vta_collection.adam_4520 import Adam4520
 from vta_collection.config import config
 from vta_collection.heater import Heater
 from vta_collection.helpers import set_excepthook
