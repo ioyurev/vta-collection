@@ -19,7 +19,7 @@ class Heater(QtCore.QThread):
     start_time = 0.0
     error_occured = QtCore.Signal(Exception)
     output = 0.0
-    speed = config.default_speed
+    speed = config.default_speed / 1000
     heat_enabled = False
     t0 = 0.0
     meas: Measurement | None = None
@@ -120,7 +120,11 @@ class Heater(QtCore.QThread):
         t1 = self.get_loop_time()
         self._heatup(t=t1)
         t2 = self.get_loop_time()
-        self.data_ready.emit(DataPoint(t1=t1, emf=emf, t2=t2, output=self.output))
+        self.data_ready.emit(
+            DataPoint(
+                t1=round(t1, 3), emf=emf, t2=round(t2, 3), output=round(self.output, 3)
+            )
+        )
 
     def _loopcallback(self):
         self._loop_body()

@@ -24,9 +24,10 @@ class Adam4021(AdamBase):
         self.CMD = Adam4021Commands(self.address)
 
     def set_output(self, value: float):
-        return self.converter.get_bytes_answer(
-            self.CMD.SET_OUTPUT + str(round(value, 3) + 0.001).encode()
-        )
+        value += 0.001
+        cmd = self.CMD.SET_OUTPUT + f"{value:06.3f}".encode()
+        answer = self.converter.get_bytes_answer(cmd=cmd)
+        return answer
 
     def meas_output(self):
         return self.converter.get_bytes_answer(self.CMD.CURRENT_OUTPUT)
