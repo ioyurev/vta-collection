@@ -44,7 +44,7 @@ class Measurement(QtCore.QObject):
     metadata: Metadata
     dc_emf = DataCon(name="emf", y_label="EMF, mV")
     dc_temp = DataCon(name="temp", y_label="Temperature, ºC")
-    dc_output = DataCon(name="output", y_label="output, mV")
+    dc_output = DataCon(name="output", y_label="Output, V")
     cal: Optional[Calibration] = None
     recording_enabled = False
     data_ready = QtCore.Signal(DataPoint)

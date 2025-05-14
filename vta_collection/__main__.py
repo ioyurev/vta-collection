@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     w = MainWindow()
 
-    adam4520 = Adam4520(timeout=1)
+    adam4520 = Adam4520()
     adam4011 = Adam4011(converter=adam4520, address=config.adam4011_address)
     adam4021 = Adam4021(converter=adam4520, address=config.adam4021_address)
     adam4520.modules = (adam4011, adam4021)

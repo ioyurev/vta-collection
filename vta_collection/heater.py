@@ -79,10 +79,9 @@ class Heater(QtCore.QThread):
     def reset_heating(self):
         log.debug("Heating reset")
         self.output = 0.0
-        self._set_output(value=self.output)
 
     def set_speed(self, value: int):
-        self.speed = value
+        self.speed = value / 1000
         log.debug(f"Heat speed changed to {value}")
 
     def set_start_time(self):
