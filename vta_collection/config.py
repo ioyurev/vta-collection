@@ -35,6 +35,8 @@ class Config(BaseModel):
     adam4011_address: int = 1
     adam4021_address: int = 3
     adam_baudrate: int = 9600
+    last_save_measurement_index: int = 1
+    last_save_dir: str = "."
 
     @classmethod
     def from_file(cls, path: Path):
@@ -46,6 +48,7 @@ class Config(BaseModel):
             log.error(e)
             log.warning("Using default config.")
             config = Config()
+            config.update()
         log.debug(f"Loaded config: {config}")
         return config
 

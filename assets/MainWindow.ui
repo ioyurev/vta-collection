@@ -27,7 +27,7 @@
          <bool>false</bool>
         </property>
         <property name="text">
-         <string> Отключить нагрев</string>
+         <string>Stop heating</string>
         </property>
         <property name="icon">
          <iconset theme="QIcon::ThemeIcon::DialogError"/>
@@ -71,7 +71,7 @@
       <item row="9" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Скорость нагрева, мВ/с</string>
+         <string>Heating speed, mV/s</string>
         </property>
        </widget>
       </item>

@@ -10,15 +10,16 @@ from PySide6 import QtCore
 from PySide6.QtWidgets import QFileDialog
 
 from vta_collection.calibration import Calibration
+from vta_collection.config import config
 from vta_collection.data_connector import DataCon
 
 
-def save_vtaz_file():
+def save_vtaz_file(initial_path: Path):
     filename, _ = QFileDialog.getSaveFileName(
         None,
-        "Сохранить файл VTA zip",  # Заголовок окна
-        "",  # Начальная директория
-        "VTA zip Files (*.vtaz)",  # Фильтр файлов
+        "Save VTA zip file",
+        str(initial_path),
+        "VTA zip Files (*.vtaz)",
     )
 
     if filename:
@@ -79,9 +80,16 @@ class Measurement(QtCore.QObject):
         return to_data_con
 
     def save_dialog(self):
-        path = save_vtaz_file()
+        initial_path = (
+            Path(config.last_save_dir)
+            / f"{config.last_save_measurement_index:03} {self.metadata.sample}"
+        )
+        path = save_vtaz_file(initial_path=initial_path)
         if path:
             self._save(path=path)
+            config.last_save_measurement_index += 1
+            config.last_save_dir = str(path.parent)
+            config.update()
 
     def _save(self, path: Path):
         with ZipFile(path, "w", ZIP_DEFLATED) as zipf:
@@ -97,6 +105,7 @@ class Measurement(QtCore.QObject):
                     text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
                     self.cal.to_file(f=text_f)
                     text_f.flush()
+        log.debug(f"Measurement saved at {path}")
 
     def reset(self):
         self.dc_emf.clear()
