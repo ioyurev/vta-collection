@@ -2,9 +2,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Final
 
 from loguru import logger as log
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_serializer
 
 
 def set_appdata_folder() -> Path:
@@ -36,7 +37,11 @@ class Config(BaseModel):
     adam4021_address: int = 3
     adam_baudrate: int = 9600
     last_save_measurement_index: int = 1
-    last_save_dir: str = "."
+    last_save_dir: Path = Field(Path("."))
+
+    @field_serializer("last_save_dir")
+    def serialize_path(self, value: Path) -> str:
+        return str(value)
 
     @classmethod
     def from_file(cls, path: Path):
@@ -59,8 +64,17 @@ class Config(BaseModel):
 
     def update(self):
         self.to_file(path=CONFIG_PATH)
+        log.debug("Config file updated")
 
 
 appdata_path = set_appdata_folder()
 CONFIG_PATH = appdata_path / "config.json"
 config = Config.from_file(CONFIG_PATH)
+CONFIG_EDITOR_IGNORE_FIELDS: Final = [
+    "operator",
+    "c0",
+    "c1",
+    "c2",
+    "c3",
+    "calibration_enabled",
+]

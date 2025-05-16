@@ -194,6 +194,7 @@
     </property>
     <addaction name="action_new"/>
     <addaction name="action_save"/>
+    <addaction name="action_config"/>
     <addaction name="action_about"/>
    </widget>
    <addaction name="menu"/>
@@ -243,6 +244,14 @@
    </property>
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="action_config">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
+   </property>
+   <property name="text">
+    <string>Configuration</string>
    </property>
   </action>
  </widget>

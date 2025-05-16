@@ -7,7 +7,8 @@ from PySide6 import QtCore, QtWidgets
 
 from vta_collection.about_window import AboutWindow
 from vta_collection.calibration import Calibration
-from vta_collection.config import config
+from vta_collection.config import CONFIG_EDITOR_IGNORE_FIELDS, config
+from vta_collection.config_editor import ConfigEditor
 from vta_collection.heater import DataPoint
 from vta_collection.measurement import Measurement
 from vta_collection.ui.main_window import Ui_MainWindow
@@ -41,6 +42,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.sb_speed.setValue(config.default_speed)
         self.about_window = AboutWindow(parent=self)
         self.action_about.triggered.connect(self.about_window.show)
+        self.config_editor = ConfigEditor(
+            config_instance=config,
+            ignore_fields=CONFIG_EDITOR_IGNORE_FIELDS,
+            parent=self,
+        )
+        self.action_config.triggered.connect(self.config_editor.show)
 
     def new_meas(self):
         self.action_new.setEnabled(False)
