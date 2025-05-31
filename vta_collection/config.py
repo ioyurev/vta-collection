@@ -38,6 +38,7 @@ class Config(BaseModel):
     adam_baudrate: int = 9600
     last_save_measurement_index: int = 1
     last_save_dir: Path = Field(Path("."))
+    comport: str = "COM1"
 
     @field_serializer("last_save_dir")
     def serialize_path(self, value: Path) -> str:

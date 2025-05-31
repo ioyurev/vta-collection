@@ -1,6 +1,6 @@
 import sys
 
-from loguru import logger as log
+# from loguru import logger as log
 from PySide6 import QtWidgets
 
 from vta_collection.adam_4011 import Adam4011
@@ -12,21 +12,21 @@ from vta_collection.helpers import set_excepthook
 from vta_collection.main_window import MainWindow
 from vta_collection.measurement import Measurement
 from vta_collection.new_measurement_window import NewMeasurementWindow
-from vta_collection.serial_base import get_serial_ports
+
+# from vta_collection.serial_base import get_serial_ports
 from vta_collection.ui import resources_rc  # noqa: F401
 
-
-def find_adam(ports: list[str], device: Adam4520):
-    if not device.found:
-        log.debug("Trying to find ADAM")
-        found = False
-        for port in ports:
-            found = device.find_on_port(port=port)
-            if found:
-                break
-        if not found:
-            raise Exception(f"{device.modelname} not found")
-        device.modules_check_identity()
+# def find_adam(ports: list[str], device: Adam4520):
+#     if not device.found:
+#         log.debug("Trying to find ADAM")
+#         found = False
+#         for port in ports:
+#             found = device.find_on_port(port=port)
+#             if found:
+#                 break
+#         if not found:
+#             raise Exception(f"{device.modelname} not found")
+#         device.modules_check_identity()
 
 
 if __name__ == "__main__":
@@ -44,7 +44,8 @@ if __name__ == "__main__":
 
     def set_meas(meas: Measurement):
         if not config.is_test_mode:
-            find_adam(ports=get_serial_ports()[::-1], device=adam4520)
+            adam4520.find_on_port(port=config.comport)
+            # find_adam(ports=get_serial_ports()[::-1], device=adam4520)
         w.new_meas()
         w.set_meas(meas=meas)
         h.set_meas(meas=meas)
