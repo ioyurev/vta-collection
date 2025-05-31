@@ -7,6 +7,10 @@ from vta_collection.base_instrument import BaseInstrument
 from vta_collection.config import config
 
 
+class ModulesNotFound(Exception):
+    pass
+
+
 class Adam4520API(BaseInstrument):
     modelname = "4520"
     endchar = b"\r"
@@ -30,9 +34,9 @@ class Adam4520API(BaseInstrument):
         self.found = self.modules_check_identity()
         if not self.found:
             self.close_serial()
-            log.warning(f"{self.modelname}: Not found on port {port}")
+            raise ModulesNotFound(f"{self.modelname}: not found {self.modules}")
         else:
-            log.info(f"{self.modelname}: Found on port {port}")
+            log.info(f"{self.modelname}: found {self.modules}")
 
         return self.found
 
