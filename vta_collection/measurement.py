@@ -43,9 +43,6 @@ class Metadata(BaseModel):
 
 class Measurement(QtCore.QObject):
     metadata: Metadata
-    dc_emf = DataCon(name="emf", y_label="EMF, mV")
-    dc_temp = DataCon(name="temp", y_label="Temperature, ºC")
-    dc_output = DataCon(name="output", y_label="Output, V")
     cal: Optional[Calibration] = None
     recording_enabled = False
     data_ready = QtCore.Signal(DataPoint)
@@ -54,6 +51,15 @@ class Measurement(QtCore.QObject):
         super().__init__()
         self.metadata = metadata
         self.cal = cal
+        self.dc_emf = DataCon(name="emf", y_label="EMF, mV", parent=self)
+        self.dc_temp = DataCon(name="temp", y_label="Temperature, ºC", parent=self)
+        self.dc_output = DataCon(name="output", y_label="Output, V", parent=self)
+        self.dc_emf_current = DataCon(
+            name="emf",
+            y_label="EMF, mV",
+            parent=self,
+            # max_points=50
+        )
 
     def set_recording_enabled(self, enabled: bool):
         self.recording_enabled = enabled
@@ -65,6 +71,7 @@ class Measurement(QtCore.QObject):
 
             def to_data_con(data: DataPoint):
                 self.data_ready.emit(data)
+                self.dc_emf_current.append_datapoint(x=data.t1, y=data.emf)
                 if self.recording_enabled:
                     self.dc_temp.append_datapoint(x=data.t1, y=cal.get_value(data.emf))
                     self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
@@ -73,6 +80,7 @@ class Measurement(QtCore.QObject):
 
             def to_data_con(data: DataPoint):
                 self.data_ready.emit(data)
+                self.dc_emf_current.append_datapoint(x=data.t1, y=data.emf)
                 if self.recording_enabled:
                     self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
                     self.dc_output.append_datapoint(x=data.t2, y=data.output)

@@ -49,6 +49,7 @@ class Heater(QtCore.QThread):
             if not self.adam4011.converter.found:
                 log.error("Heater can't be started")
                 return
+        self.set_start_time()
         log.debug("Starting heater thread")
         return super().start()
 
@@ -68,6 +69,7 @@ class Heater(QtCore.QThread):
             self.meas.set_recording_enabled(enabled=False)
             self.reset_heating()
         self.heat_enabled = False
+        self.set_start_time()
         log.debug("Heating stoped")
 
     def start_heating(self):
