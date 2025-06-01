@@ -29,6 +29,13 @@ from vta_collection.ui import resources_rc  # noqa: F401
 #         device.modules_check_identity()
 
 
+def close_splash():
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        import pyi_splash  # type: ignore
+
+        pyi_splash.close()
+
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     set_excepthook()
@@ -64,5 +71,6 @@ if __name__ == "__main__":
     w.sb_speed.valueChanged.connect(h.set_speed)
 
     w.show()
+    close_splash()
     app.aboutToQuit.connect(h.stop_thread)
     sys.exit(app.exec())
