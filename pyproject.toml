@@ -28,6 +28,8 @@ mypy = "^1.15.0"
 types-pyserial = "^3.5.0.20250326"
 pre-commit = "^4.2.0"
 commitizen = "^4.6.0"
+pyinstaller = "^6.13.0"
+pillow = "^11.2.1"
 
 [tool.commitizen]
 version = "0.1.0"
