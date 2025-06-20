@@ -64,7 +64,7 @@ class Heater(QtCore.QThread):
         if hasattr(self, "meas") and self.meas:
             self.meas.save_data()
             self.reset_heating()
-        self.meas.clear()
+            self.meas.clear()
         self.heat_enabled = False
         self.set_start_time()
         log.debug("Heating stoped")
