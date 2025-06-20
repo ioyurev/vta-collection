@@ -51,7 +51,8 @@ if __name__ == "__main__":
 
     def set_meas(meas: Measurement):
         if not config.is_test_mode:
-            adam4520.find_on_port(port=config.comport)
+            if not adam4520.found:
+                adam4520.find_on_port(port=config.comport)
             # find_adam(ports=get_serial_ports()[::-1], device=adam4520)
         w.new_meas()
         w.set_meas(meas=meas)

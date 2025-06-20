@@ -44,7 +44,6 @@ class Metadata(BaseModel):
 class Measurement(QtCore.QObject):
     metadata: Metadata
     cal: Optional[Calibration] = None
-    recording_enabled = False
     data_ready = QtCore.Signal(DataPoint)
 
     def __init__(self, metadata: Metadata, cal: Calibration | None = None):
@@ -54,16 +53,9 @@ class Measurement(QtCore.QObject):
         self.dc_emf = DataCon(name="emf", y_label="EMF, mV", parent=self)
         self.dc_temp = DataCon(name="temp", y_label="Temperature, ºC", parent=self)
         self.dc_output = DataCon(name="output", y_label="Output, V", parent=self)
-        self.dc_emf_current = DataCon(
-            name="emf",
-            y_label="EMF, mV",
-            parent=self,
-            # max_points=50
-        )
 
-    def set_recording_enabled(self, enabled: bool):
-        self.recording_enabled = enabled
-        log.debug(f"Recording set to enabled: {enabled}")
+    def save_data(self):
+        self.dc_emf.save_data()
 
     def make_data_connection(self):
         if self.cal is not None:
@@ -71,19 +63,15 @@ class Measurement(QtCore.QObject):
 
             def to_data_con(data: DataPoint):
                 self.data_ready.emit(data)
-                self.dc_emf_current.append_datapoint(x=data.t1, y=data.emf)
-                if self.recording_enabled:
-                    self.dc_temp.append_datapoint(x=data.t1, y=cal.get_value(data.emf))
-                    self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
-                    self.dc_output.append_datapoint(x=data.t2, y=data.output)
+                self.dc_temp.append_datapoint(x=data.t1, y=cal.get_value(data.emf))
+                self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
+                self.dc_output.append_datapoint(x=data.t2, y=data.output)
         else:
 
             def to_data_con(data: DataPoint):
                 self.data_ready.emit(data)
-                self.dc_emf_current.append_datapoint(x=data.t1, y=data.emf)
-                if self.recording_enabled:
-                    self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
-                    self.dc_output.append_datapoint(x=data.t2, y=data.output)
+                self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
+                self.dc_output.append_datapoint(x=data.t2, y=data.output)
 
         return to_data_con
 
@@ -106,7 +94,10 @@ class Measurement(QtCore.QObject):
             zipf.writestr("metadata.json", metadata_json.encode("utf-8"))
             with zipf.open("data_input.csv", "w") as byte_f:
                 text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
-                self.dc_emf.to_csv(f=text_f)
+                if self.dc_emf.saved_data is not None:
+                    self.dc_emf.saved_data.to_csv(f=text_f)
+                else:
+                    raise Exception("No data to save")
                 text_f.flush()
             if self.cal is not None:
                 with zipf.open("calibration.json", "w") as byte_f:
@@ -115,7 +106,7 @@ class Measurement(QtCore.QObject):
                     text_f.flush()
         log.debug(f"Measurement saved at {path}")
 
-    def reset(self):
+    def clear(self):
         self.dc_emf.clear()
         self.dc_temp.clear()
         self.dc_output.clear()

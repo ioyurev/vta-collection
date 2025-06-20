@@ -31,16 +31,13 @@ class Heater(QtCore.QThread):
         self.adam4021 = adam4021
         self.error_occured.connect(log.error)
 
-    def reset_meas(self):
-        if hasattr(self, "meas") and self.meas:
-            self.meas.reset()
-            del self.meas
-
     def set_meas(self, meas: Measurement):
-        self.reset_meas()
+        if hasattr(self, "meas") and self.meas:
+            del self.meas
         self.meas = meas
         with warnings.catch_warnings(action="ignore"):
             self.data_ready.disconnect()
+        self.set_start_time()
         self.data_ready.connect(meas.make_data_connection())
         log.debug("Recording connection defined")
 
@@ -57,7 +54,6 @@ class Heater(QtCore.QThread):
         self._run_body()
 
     def stop_thread(self):
-        self.reset_meas()
         self.stop_heating()
         log.debug("Stopping heater thread")
         self._is_running = False
@@ -66,15 +62,16 @@ class Heater(QtCore.QThread):
 
     def stop_heating(self):
         if hasattr(self, "meas") and self.meas:
-            self.meas.set_recording_enabled(enabled=False)
+            self.meas.save_data()
             self.reset_heating()
+        self.meas.clear()
         self.heat_enabled = False
         self.set_start_time()
         log.debug("Heating stoped")
 
     def start_heating(self):
+        self.meas.clear()
         self.set_start_time()
-        self.meas.set_recording_enabled(enabled=True)
         self.heat_enabled = True
         log.debug("Heating started")
 

@@ -36,7 +36,7 @@ class Adam4520API(BaseInstrument):
             self.close_serial()
             raise ModulesNotFound(f"{self.modelname}: not found {self.modules}")
         else:
-            log.info(f"{self.modelname}: found {self.modules}")
+            log.info(f"{self.modelname}: found {[mod.name for mod in self.modules]}")
 
         return self.found
 

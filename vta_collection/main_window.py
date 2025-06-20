@@ -1,6 +1,5 @@
 # from vta_collection.config import config
 import warnings
-from typing import Callable
 
 from loguru import logger as log
 from pglive.sources.live_plot_widget import LivePlotWidget
@@ -18,9 +17,10 @@ from vta_collection.ui.main_window import Ui_MainWindow
 def clear_layout(layout: QtWidgets.QVBoxLayout):
     # """Рекурсивно удаляет все виджеты и дочерние макеты из QLayout."""
     while layout.count():
-        layout.takeAt(0)
-        # widget = item.widget()
-        # widget.deleteLater()
+        item = layout.takeAt(0)
+        widget = item.widget()
+        widget.deleteLater()
+        del item
     log.debug("Layout cleared")
 
 
@@ -29,8 +29,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     w_emf: LivePlotWidget
     w_temp: LivePlotWidget
     w_out: LivePlotWidget
-    w_emf_preview: LivePlotWidget
-    set_plot: Callable
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -53,6 +51,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def new_meas(self):
         self.action_new.setEnabled(False)
+        self.action_save.setEnabled(False)
         self.action_close.setEnabled(True)
         self.btn_start.setEnabled(True)
         self.sb_speed.setValue(config.default_speed)
@@ -61,24 +60,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
         self.btn_stop_heat.setEnabled(True)
-        clear_layout(self.plot_layout)
-        self.set_plot()
 
     def stop_loop(self):
         self.btn_stop.setEnabled(False)
         self.action_new.setEnabled(True)
         self.action_save.setEnabled(True)
-        clear_layout(self.plot_layout)
-        self.set_live_plot_current()  # not working TODO: fix
 
     def stop_heating(self):
         self.sb_speed.setValue(0)
 
     def update_cal_polynom(self, cal: Calibration):
         self.label_calibration.setText(cal.to_formule_str())
-
-    def set_live_plot_current(self):
-        self.plot_layout.addWidget(self.w_emf_preview)
 
     def set_live_plot(self, meas: Measurement):
         if meas.cal is not None:
@@ -101,8 +93,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             del self.w_temp
         if hasattr(self, "w_out") and self.w_out:
             del self.w_out
-        if hasattr(self, "w_emf_preview") and self.w_emf_preview:
-            del self.w_emf_preview
 
     def set_meas(self, meas: Measurement):
         if meas.cal is not None:
@@ -123,7 +113,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.w_emf = meas.dc_emf.widget
         self.w_temp = meas.dc_temp.widget
         self.w_out = meas.dc_output.widget
-        self.w_emf_preview = meas.dc_emf_current.widget
 
         self.action_save.triggered.disconnect()
         self.action_save.triggered.connect(meas.save_dialog)
@@ -137,8 +126,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.label_operator.setText(f"Operator: <b>{meas.metadata.operator}</b>")
         self.label_sample.setText(f"Sample: <b>{meas.metadata.sample}</b>")
 
-        self.set_live_plot_current()
-        self.set_plot = lambda: self.set_live_plot(meas=meas)
+        self.set_live_plot(meas=meas)
 
     # def closeEvent(self, event):
     #     self.w_out.close()
