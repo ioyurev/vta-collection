@@ -88,7 +88,7 @@ This project leverages several powerful open-source libraries:
 - [loguru](https://github.com/Delgan/loguru)
 - [pyserial](https://pyserial.readthedocs.io/)
 - [pydantic](https://docs.pydantic.dev/)
-- [pglive](https://github.com/pglive/pglive)
+- [pglive](https://github.com/domarm-comat/pglive)
 
 Additionally, ready-made Windows builds are available for convenient installation and use, eliminating the need for manual setup of Python environment or dependencies.
 
