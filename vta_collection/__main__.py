@@ -12,6 +12,7 @@ from vta_collection.helpers import set_excepthook
 from vta_collection.main_window import MainWindow
 from vta_collection.measurement import Measurement
 from vta_collection.new_measurement_window import NewMeasurementWindow
+from vta_collection.serial_base import get_serial_ports
 
 # from vta_collection.serial_base import get_serial_ports
 from vta_collection.ui import resources_rc  # noqa: F401
@@ -36,6 +37,14 @@ def close_splash():
         pyi_splash.close()
 
 
+def validate_com_port():
+    ports = get_serial_ports()
+    if config.comport not in ports:
+        raise Exception(
+            f"COM port '{config.comport}' is not available. Available ports: {ports}"
+        )
+
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     set_excepthook()
@@ -52,6 +61,7 @@ if __name__ == "__main__":
     def set_meas(meas: Measurement):
         if not config.is_test_mode:
             if not adam4520.found:
+                validate_com_port()
                 adam4520.find_on_port(port=config.comport)
             # find_adam(ports=get_serial_ports()[::-1], device=adam4520)
         w.new_meas()

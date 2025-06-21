@@ -31,7 +31,14 @@ class Adam4520API(BaseInstrument):
 
     def find_on_port(self, port: str):
         self.open_serial(port=port)
-        self.found = self.modules_check_identity()
+
+        original_timeout = self.ser.timeout
+        self.ser.timeout = 5
+        try:
+            self.found = self.modules_check_identity()
+        finally:
+            self.ser.timeout = original_timeout
+
         if not self.found:
             self.close_serial()
             raise ModulesNotFound(f"{self.modelname}: not found {self.modules}")
