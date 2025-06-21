@@ -17,12 +17,12 @@ draw = ImageDraw.Draw(img)
 
 # Загружаем шрифты (с обработкой ошибок)
 try:
-    PILFONT = ImageFont.truetype("times.ttf", 60)
-    PILFONTSMALL = ImageFont.truetype("times.ttf", 40)
+    PILFONT = ImageFont.truetype("arial.ttf", 60)
+    PILFONTSMALL = ImageFont.truetype("arial.ttf", 40)
 except OSError:
     try:
-        PILFONT = ImageFont.truetype("DejaVuSerif.ttf", 60)
-        PILFONTSMALL = ImageFont.truetype("DejaVuSerif.ttf", 40)
+        PILFONT = ImageFont.truetype("LiberationsSans.ttf", 60)
+        PILFONTSMALL = ImageFont.truetype("LiberationsSans.ttf", 40)
     except OSError:
         # Используем шрифт по умолчанию с ручным указанием размера
         PILFONT = ImageFont.load_default(60)
