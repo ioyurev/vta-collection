@@ -1,5 +1,7 @@
 # VTA Collection Application
 
+![Application Logo](assets/icon.png)
+
 ## Overview
 
 The VTA Collection Application is a desktop software developed in Python using the PySide6 framework. It is designed for collecting, processing, and visualizing Visual Thermal Analysis (VTA) data from connected hardware instruments.
