@@ -87,26 +87,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def clear_plot_widgets(self):
         clear_layout(self.plot_layout)
-        if hasattr(self, "w_emf") and self.w_emf:
-            del self.w_emf
-        if hasattr(self, "w_temp") and self.w_temp:
-            del self.w_temp
-        if hasattr(self, "w_out") and self.w_out:
-            del self.w_out
+        # Explicitly delete widgets to prevent memory leaks
+        for attr in ["w_emf", "w_temp", "w_out"]:
+            widget = getattr(self, attr, None)
+            if widget:
+                widget.deleteLater()
+                delattr(self, attr)
 
     def set_meas(self, meas: Measurement):
-        if meas.cal is not None:
-            cal = meas.cal
+        def update_display_cal(data: DataPoint):
+            self.label_input.setText(f"{data.emf:.3f}")
+            self.label_output.setText(f"{data.output:.3f}")
+            self.label_temp_value.setText(f"{meas.cal.get_value(data.emf):.1f}")  # type: ignore[union-attr]
 
-            def update_display(data: DataPoint):
-                self.label_input.setText(f"{data.emf:.3f}")
-                self.label_output.setText(f"{data.output:.3f}")
-                self.label_temp_value.setText(f"{cal.get_value(data.emf):.1f}")
-        else:
-
-            def update_display(data: DataPoint):
-                self.label_input.setText(f"{data.emf:.3f}")
-                self.label_output.setText(f"{data.output:.3f}")
+        def update_display_no_cal(data: DataPoint):
+            self.label_input.setText(f"{data.emf:.3f}")
+            self.label_output.setText(f"{data.output:.3f}")
 
         self.clear_plot_widgets()
 
@@ -121,7 +117,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_output.clicked.connect(self.w_out.show)
         with warnings.catch_warnings(action="ignore"):
             meas.data_ready.disconnect()
-        meas.data_ready.connect(update_display)
+        if meas.cal is not None:
+            meas.data_ready.connect(update_display_cal)
+        else:
+            meas.data_ready.connect(update_display_no_cal)
 
         self.label_operator.setText(f"Operator: <b>{meas.metadata.operator}</b>")
         self.label_sample.setText(f"Sample: <b>{meas.metadata.sample}</b>")
