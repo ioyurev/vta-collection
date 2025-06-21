@@ -9,8 +9,7 @@ from vta_collection.about_window import AboutWindow
 from vta_collection.calibration import Calibration
 from vta_collection.config import CONFIG_EDITOR_IGNORE_FIELDS, config
 from vta_collection.config_editor import ConfigEditor
-from vta_collection.heater import DataPoint
-from vta_collection.measurement import Measurement
+from vta_collection.measurement import DataPoint, Measurement
 from vta_collection.ui.main_window import Ui_MainWindow
 
 

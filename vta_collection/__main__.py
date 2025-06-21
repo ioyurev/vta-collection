@@ -7,7 +7,7 @@ from vta_collection.adam_4011 import Adam4011
 from vta_collection.adam_4021 import Adam4021
 from vta_collection.adam_4520 import Adam4520
 from vta_collection.config import config
-from vta_collection.heater import Heater
+from vta_collection.heater.controller import HeaterController
 from vta_collection.helpers import set_excepthook
 from vta_collection.main_window import MainWindow
 from vta_collection.measurement import Measurement
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     adam4021 = Adam4021(converter=adam4520, address=config.adam4021_address)
     adam4520.modules = (adam4011, adam4021)
 
-    h = Heater(adam4011=adam4011, adam4021=adam4021, parent=app)
+    h = HeaterController(adam4011=adam4011, adam4021=adam4021, parent=app)
 
     def set_meas(meas: Measurement):
         if not config.is_test_mode:
@@ -67,8 +67,7 @@ if __name__ == "__main__":
         w.new_meas()
         w.set_meas(meas=meas)
         h.set_meas(meas=meas)
-        if not h._is_running:
-            h.start()
+        h.start_loop()
 
     def new_meas():
         nmw = NewMeasurementWindow(parent=w)
@@ -83,5 +82,5 @@ if __name__ == "__main__":
 
     w.show()
     close_splash()
-    app.aboutToQuit.connect(h.stop_thread)
+    app.aboutToQuit.connect(h.stop_loop)
     sys.exit(app.exec())

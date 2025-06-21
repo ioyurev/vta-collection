@@ -45,6 +45,7 @@ class Measurement(QtCore.QObject):
     metadata: Metadata
     cal: Optional[Calibration] = None
     data_ready = QtCore.Signal(DataPoint)
+    recording_enabled = False
 
     def __init__(self, metadata: Metadata, cal: Calibration | None = None):
         super().__init__()
@@ -62,6 +63,8 @@ class Measurement(QtCore.QObject):
             cal = self.cal  # костыль для mypy
 
             def to_data_con(data: DataPoint):
+                if not self.recording_enabled:
+                    return
                 self.data_ready.emit(data)
                 self.dc_temp.append_datapoint(x=data.t1, y=cal.get_value(data.emf))
                 self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
@@ -69,6 +72,8 @@ class Measurement(QtCore.QObject):
         else:
 
             def to_data_con(data: DataPoint):
+                if not self.recording_enabled:
+                    return
                 self.data_ready.emit(data)
                 self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
                 self.dc_output.append_datapoint(x=data.t2, y=data.output)
