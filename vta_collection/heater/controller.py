@@ -32,6 +32,8 @@ class HeaterController(QtCore.QObject):
         # log.debug("Recording connection defined")
 
     def set_meas_connection(self, enabled):
+        if self.meas is None:
+            return
         if enabled:
             self.data_ready.connect(self.meas.make_data_connection())
             self.meas.recording_enabled = True
