@@ -7,7 +7,7 @@ def get_serial_ports():
     return [port.device for port in serial.tools.list_ports.comports()]
 
 
-class SerialThread:
+class SerialWorker:
     endchar = b"\n"
 
     def __init__(self, baudrate, bytesize, parity, stopbits, timeout, dsrdtr, rtscts):

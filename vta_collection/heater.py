@@ -17,7 +17,7 @@ class Heater(QtCore.QThread):
     _is_running = False
     data_ready = QtCore.Signal(DataPoint)
     start_time = 0.0
-    error_occured = QtCore.Signal(Exception)
+    error_occurred = QtCore.Signal(Exception)
     output = 0.0
     speed = config.default_speed / 1000
     heat_enabled = False
@@ -29,7 +29,7 @@ class Heater(QtCore.QThread):
         super().__init__(parent)
         self.adam4011 = adam4011
         self.adam4021 = adam4021
-        self.error_occured.connect(log.error)
+        self.error_occurred.connect(log.error)
 
     def set_meas(self, meas: Measurement):
         if hasattr(self, "meas") and self.meas:
@@ -100,7 +100,7 @@ class Heater(QtCore.QThread):
             try:
                 self._loopcallback()
             except Exception as e:
-                self.error_occured.emit(Exception(f"LoopError: {e}"))
+                self.error_occurred.emit(Exception(f"LoopError: {e}"))
 
     def _get_data(self):
         return self.adam4011.get_data()

@@ -30,12 +30,13 @@ class DataCon(QtCore.QObject):
     def __init__(
         self,
         name: str,
-        y_label: str | None = None,
+        y_label: str = "",
         x_label: str = "time, s",
         line_color: str = "white",
         max_points: float = inf,
         parent=None,
     ):
+        super().__init__(parent)
         self.name = name
         self.x_label = x_label
         self.y_label = y_label
@@ -47,7 +48,7 @@ class DataCon(QtCore.QObject):
         plot_item.setLabel(axis="left", text=self.y_label)
         plot_item.setLabel(axis="bottom", text=self.x_label)
 
-    def save_data(self):
+    def save_data(self) -> None:
         self.saved_data = DataPack(
             x_label=self.x_label,
             y_label=self.y_label,
@@ -55,13 +56,13 @@ class DataCon(QtCore.QObject):
             y=self.dc.y.copy(),
         )
 
-    def append_datapoint(self, x: int | float, y: int | float):
+    def append_datapoint(self, x: int | float, y: int | float) -> None:
         self.dc.cb_append_data_point(y, x)
 
-    def append_dataarray(self, x: list[float | int], y: list[float | int]):
+    def append_dataarray(self, x: list[float | int], y: list[float | int]) -> None:
         self.dc.cb_append_data_array(y, x)
 
-    def clear(self):
+    def clear(self) -> None:
         self.dc.clear()
         self.llp.clear()
 

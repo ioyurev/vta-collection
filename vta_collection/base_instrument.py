@@ -1,9 +1,9 @@
 from loguru import logger as log
 
-from vta_collection.serial_base import SerialThread
+from vta_collection.serial_base import SerialWorker
 
 
-class BaseInstrument(SerialThread):
+class BaseInstrument(SerialWorker):
     modelname: str
 
     def __init__(

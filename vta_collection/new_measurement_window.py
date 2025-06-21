@@ -16,7 +16,7 @@ class NewMeasurementWindow(QtWidgets.QDialog, Ui_Dialog):
         self.setupUi(self)
 
         self.le_operator.setText(config.operator)
-        self.cb_cal_enabled.checkStateChanged.connect(self.set_stuff_enabled)
+        self.cb_cal_enabled.checkStateChanged.connect(self.toggle_calibration_fields)
         self.cb_cal_enabled.setChecked(config.calibration_enabled)
         self.le_c0.setText(str(config.c0))
         self.le_c1.setText(str(config.c1))
@@ -39,7 +39,7 @@ class NewMeasurementWindow(QtWidgets.QDialog, Ui_Dialog):
             log.warning(e)
         self.label_calibration.setText(self.cal.to_formule_str())
 
-    def set_stuff_enabled(self):
+    def toggle_calibration_fields(self):
         enabled = self.cb_cal_enabled.isChecked()
         self.le_c0.setEnabled(enabled)
         self.le_c1.setEnabled(enabled)
