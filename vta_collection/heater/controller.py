@@ -65,7 +65,6 @@ class HeaterController(QtCore.QObject):
         self.reset_heating()
         if self.meas:
             self.meas.snapshot_emf()
-            self.meas.clear()
         self.loop.heater.set_enabled(False)
         log.debug("Heating stopped")
 
