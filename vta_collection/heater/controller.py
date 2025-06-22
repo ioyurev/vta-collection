@@ -1,4 +1,5 @@
 import warnings
+from typing import Optional
 
 from loguru import logger as log
 from PySide6 import QtCore
@@ -12,12 +13,12 @@ from vta_collection.measurement import DataPoint, Measurement
 
 class HeaterController(QtCore.QObject):
     data_ready = QtCore.Signal(DataPoint)
+    meas: Optional[Measurement] = None
 
     def __init__(self, adam4011: Adam4011, adam4021: Adam4021, parent=None):
         super().__init__(parent)
         self.adam4011 = adam4011
         self.adam4021 = adam4021
-        self.meas: Measurement | None = None
         if config.is_test_mode:
             self.loop = TestLoop()
         else:
@@ -26,10 +27,9 @@ class HeaterController(QtCore.QObject):
         self.loop.error_occurred.connect(log.error)
 
     def set_meas(self, meas: Measurement):
-        if hasattr(self, "meas") and self.meas:
+        if self.meas:
             del self.meas
         self.meas = meas
-        # log.debug("Recording connection defined")
 
     def set_meas_connection(self, enabled):
         if self.meas is None:
@@ -59,20 +59,15 @@ class HeaterController(QtCore.QObject):
             self.meas.clear()
         self.loop.heater.set_enabled(True)
         log.debug("Heating started")
-        self.loop.set_enabled(True)
         self.set_meas_connection(True)
 
     def stop_heating(self):
-        self.set_meas_connection(False)
-        self.loop.set_enabled(False)
-        if hasattr(self, "meas") and self.meas:
-            self.meas.save_data()
-            self.reset_heating()
-            # self.meas.clear()
+        self.reset_heating()
+        if self.meas:
+            self.meas.snapshot_emf()
+            self.meas.clear()
         self.loop.heater.set_enabled(False)
         log.debug("Heating stopped")
-        # self.loop.set_enabled(True)
-        # self.set_meas_connection(True)
 
     def reset_heating(self):
         log.debug("Heating reset")
@@ -81,5 +76,4 @@ class HeaterController(QtCore.QObject):
 
     def set_speed(self, value: int):
         self.loop.heater.set_speed(value=value)
-        log.debug(f"Heat speed changed to {value}")
         log.debug(f"Heat speed changed to {value}")

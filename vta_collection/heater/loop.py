@@ -22,7 +22,6 @@ class AbstractLoop(QtCore.QThread):
         super().__init__()
         self.heater = Heater(self)
         self.thread_is_running = False
-        self.start_time = 0.0
         self.enabled = False
 
     def start_thread(self):
@@ -30,7 +29,6 @@ class AbstractLoop(QtCore.QThread):
             super().start()
 
     def run(self):
-        self.start_time = time.monotonic()
         self.thread_is_running = True
         while self.thread_is_running:
             if self.enabled:
@@ -38,7 +36,6 @@ class AbstractLoop(QtCore.QThread):
                     self.loop_body()
                 except Exception as e:
                     self.error_occurred.emit(Exception(f"LoopError: {e}"))
-            # self.msleep(10)
 
     def stop_thread(self):
         self.set_enabled(False)
@@ -48,18 +45,13 @@ class AbstractLoop(QtCore.QThread):
 
     def set_enabled(self, enabled: bool):
         self.enabled = enabled
-        if enabled:
-            self.start_time = time.monotonic()
-
-    def get_time(self):
-        return time.monotonic() - self.start_time
 
     def loop_body(self):
         try:
             emf = self.get_data()
-            t1 = self.get_time()
+            t1 = time.monotonic()
             self.heater.heatup(last_t=t1)
-            t2 = self.get_time()
+            t2 = time.monotonic()
             data = DataPoint(
                 t1=round(t1, 3),
                 emf=emf,

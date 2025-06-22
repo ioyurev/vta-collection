@@ -14,7 +14,7 @@ from vta_collection.config import config
 from vta_collection.data_connector import DataCon
 
 
-def save_vtaz_file(initial_path: Path):
+def prompt_save_path(initial_path: Path):
     filename, _ = QFileDialog.getSaveFileName(
         None,
         "Save VTA zip file",
@@ -46,6 +46,7 @@ class Measurement(QtCore.QObject):
     cal: Optional[Calibration] = None
     data_ready = QtCore.Signal(DataPoint)
     recording_enabled = False
+    start_time: Optional[float] = None
 
     def __init__(self, metadata: Metadata, cal: Calibration | None = None):
         super().__init__()
@@ -55,7 +56,7 @@ class Measurement(QtCore.QObject):
         self.dc_temp = DataCon(name="temp", y_label="Temperature, ºC", parent=self)
         self.dc_output = DataCon(name="output", y_label="Output, V", parent=self)
 
-    def save_data(self):
+    def snapshot_emf(self):
         self.dc_emf.save_data()
 
     def make_data_connection(self):
@@ -65,18 +66,26 @@ class Measurement(QtCore.QObject):
             def to_data_con(data: DataPoint):
                 if not self.recording_enabled:
                     return
+                if self.start_time is None:
+                    self.start_time = data.t1
+                rel_t1 = data.t1 - self.start_time
+                rel_t2 = data.t2 - self.start_time
                 self.data_ready.emit(data)
-                self.dc_temp.append_datapoint(x=data.t1, y=cal.get_value(data.emf))
-                self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
-                self.dc_output.append_datapoint(x=data.t2, y=data.output)
+                self.dc_temp.append_datapoint(x=rel_t1, y=cal.get_value(data.emf))
+                self.dc_emf.append_datapoint(x=rel_t1, y=data.emf)
+                self.dc_output.append_datapoint(x=rel_t2, y=data.output)
         else:
 
             def to_data_con(data: DataPoint):
                 if not self.recording_enabled:
                     return
+                if self.start_time is None:
+                    self.start_time = data.t1
+                rel_t1 = data.t1 - self.start_time
+                rel_t2 = data.t2 - self.start_time
                 self.data_ready.emit(data)
-                self.dc_emf.append_datapoint(x=data.t1, y=data.emf)
-                self.dc_output.append_datapoint(x=data.t2, y=data.output)
+                self.dc_emf.append_datapoint(x=rel_t1, y=data.emf)
+                self.dc_output.append_datapoint(x=rel_t2, y=data.output)
 
         return to_data_con
 
@@ -85,14 +94,14 @@ class Measurement(QtCore.QObject):
             Path(config.last_save_dir)
             / f"{config.last_save_measurement_index:03} {self.metadata.sample}"
         )
-        path = save_vtaz_file(initial_path=initial_path)
+        path = prompt_save_path(initial_path=initial_path)
         if path:
-            self._save(path=path)
+            self._export_to_zip(path=path)
             config.last_save_measurement_index += 1
             config.last_save_dir = str(path.parent)
             config.update()
 
-    def _save(self, path: Path):
+    def _export_to_zip(self, path: Path):
         with ZipFile(path, "w", ZIP_DEFLATED) as zipf:
             self.metadata.created_at = datetime.now()
             metadata_json = self.metadata.model_dump_json(indent=2)
@@ -115,3 +124,4 @@ class Measurement(QtCore.QObject):
         self.dc_emf.clear()
         self.dc_temp.clear()
         self.dc_output.clear()
+        self.start_time = None
