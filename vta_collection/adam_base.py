@@ -1,7 +1,5 @@
 from typing import TYPE_CHECKING
 
-from vta_collection.adam_4011_config import Adam4011Config
-
 if TYPE_CHECKING:
     from vta_collection.adam_4520 import Adam4520API
 
@@ -41,5 +39,4 @@ class AdamBase:
         return self.converter.send_command(cmd=self.CMD.GET_NAME, logging_answer=True)
 
     def setup(self):
-        self.config = Adam4011Config.from_str(string=self.get_conf_status())
         self.name = self.get_name()

@@ -49,3 +49,7 @@ class Adam4011(AdamBase):
 
     def parse_sync_data(self, data: bytes):
         return float(data.decode("ascii").strip()[5:])
+
+    def setup(self):
+        super().setup()
+        self.config = Adam4011Config.from_str(string=self.get_conf_status())

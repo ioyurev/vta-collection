@@ -38,6 +38,7 @@ class Adam4520API(BaseInstrument):
             self.found = self.modules_check_identity()
         finally:
             self.ser.timeout = original_timeout
+        self.modules_setup()
 
         if not self.found:
             self.close_serial()

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from vta_collection.adam_4021_config import Adam4021Config
 from vta_collection.adam_base import AdamBase, AdamBaseCommands
 
 if TYPE_CHECKING:
@@ -34,4 +35,5 @@ class Adam4021(AdamBase):
 
     def setup(self):
         super().setup()
+        self.config = Adam4021Config.from_str(string=self.get_conf_status())
         self.set_output(value=0.0)
