@@ -8,6 +8,8 @@ The VTA Collection Application is a desktop software developed in Python using t
 
 This application communicates with hardware modules (Adam4011, Adam4021, Adam4520) via serial interfaces, enabling real-time data acquisition, calibration processing, and measurement management.
 
+![Application Screenshot](screenshot.png)
+
 ## Features
 
 - **Hardware Integration:** Supports Adam series instruments for precise data collection.
