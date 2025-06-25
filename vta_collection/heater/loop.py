@@ -14,6 +14,14 @@ if TYPE_CHECKING:
     from vta_collection.heater.controller import HeaterController
 
 
+class LoopException(Exception):
+    pass
+
+
+class OutputException(Exception):
+    pass
+
+
 class AbstractLoop(QtCore.QThread):
     error_occurred = QtCore.Signal(Exception)
     data_ready = QtCore.Signal(DataPoint)
@@ -35,7 +43,7 @@ class AbstractLoop(QtCore.QThread):
                 try:
                     self.loop_body()
                 except Exception as e:
-                    self.error_occurred.emit(Exception(f"LoopError: {e}"))
+                    self.error_occurred.emit(LoopException(e))
 
     def stop_thread(self):
         self.set_enabled(False)
@@ -47,20 +55,17 @@ class AbstractLoop(QtCore.QThread):
         self.enabled = enabled
 
     def loop_body(self):
-        try:
-            emf = self.get_data()
-            t1 = time.monotonic()
-            self.heater.heatup(last_t=t1)
-            t2 = time.monotonic()
-            data = DataPoint(
-                t1=round(t1, 3),
-                emf=emf,
-                t2=round(t2, 3),
-                output=round(self.heater.output, 3),
-            )
-            self.data_ready.emit(data)
-        except Exception as e:
-            self.error_occurred.emit(Exception(f"LoopError: {e}"))
+        emf = self.get_data()
+        t1 = time.monotonic()
+        self.heater.heatup(last_t=t1)
+        t2 = time.monotonic()
+        data = DataPoint(
+            t1=round(t1, 3),
+            emf=emf,
+            t2=round(t2, 3),
+            output=round(self.heater.output, 3),
+        )
+        self.data_ready.emit(data)
 
     @abstractmethod
     def get_data(self):
@@ -82,7 +87,10 @@ class RealLoop(AbstractLoop):
         return self.controller.adam4011.get_data()
 
     def set_output(self, value: float):
-        self.controller.adam4021.set_output(value=value)
+        try:
+            self.controller.adam4021.set_output(value=value)
+        except Exception as e:
+            self.error_occurred.emit(OutputException(e))
 
 
 class TestLoop(AbstractLoop):
