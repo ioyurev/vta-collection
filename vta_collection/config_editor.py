@@ -71,22 +71,22 @@ class ConfigEditor(QDialog):
     def create_widget(self, field_name: str, field_type: type, default_value: Any):
         """Создает виджет в зависимости от типа поля и его имени"""
         # Специальная обработка для поля comport
-        if field_name == "comport" and field_type == str:
+        if field_name == "comport" and field_type is str:
             return ComPortPicker(default_value)
 
-        if field_type == bool:
+        if field_type is bool:
             checkbox = QCheckBox()
             checkbox.setChecked(default_value)
             return checkbox
 
         elif field_type in (int, float):
-            spinbox = QSpinBox() if field_type == int else QDoubleSpinBox()
+            spinbox = QSpinBox() if field_type is int else QDoubleSpinBox()
             spinbox.setMinimum(-1000000)
             spinbox.setMaximum(1000000)
             spinbox.setValue(default_value)
             return spinbox
 
-        elif field_type == str:
+        elif field_type is str:
             line_edit = QLineEdit(str(default_value))
             return line_edit
 
@@ -104,11 +104,11 @@ class ConfigEditor(QDialog):
 
             if isinstance(widget, (ComPortPicker, PathPicker)):
                 result[field_name] = widget.value()
-            elif field_type == bool:
+            elif field_type is bool:
                 result[field_name] = widget.isChecked()
             elif field_type in (int, float):
                 result[field_name] = widget.value()
-            elif field_type == str:
+            elif field_type is str:
                 result[field_name] = widget.text()
 
         return result
