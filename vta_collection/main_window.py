@@ -23,6 +23,9 @@ def clear_layout(layout: QtWidgets.QVBoxLayout):
     log.debug("Layout cleared")
 
 
+last_time = 0.0
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     out_connection: QtCore.QMetaObject.Connection | None = None
     w_emf: LivePlotWidget
@@ -95,13 +98,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def set_meas(self, meas: Measurement):
         def update_display_cal(data: DataPoint):
+            global last_time
             self.label_input.setText(f"{data.emf:.3f}")
             self.label_output.setText(f"{data.output:.3f}")
             self.label_temp_value.setText(f"{meas.cal.get_value(data.emf):.1f}")  # type: ignore[union-attr]
+            sample_rate = 1 / (data.t1 - last_time)
+            self.label_sampling_rate.setText(f"{sample_rate:.2f}")
+            last_time = data.t1
 
         def update_display_no_cal(data: DataPoint):
+            global last_time
             self.label_input.setText(f"{data.emf:.3f}")
             self.label_output.setText(f"{data.output:.3f}")
+            sample_rate = 1 / (data.t1 - last_time)
+            self.label_sampling_rate.setText(f"{sample_rate:.1f}")
+            last_time = data.t1
 
         self.clear_plot_widgets()
 

@@ -41,7 +41,11 @@ class DataCon(QtCore.QObject):
         self.x_label = x_label
         self.y_label = y_label
         self.llp = LiveLinePlot(name=name, pen=line_color)
-        self.dc = DataConnector(plot=self.llp, max_points=max_points)
+        self.dc = DataConnector(
+            plot=self.llp,
+            max_points=max_points,
+            plot_rate=5,
+        )
         self.widget = LivePlotWidget()
         self.widget.addItem(self.llp)
         plot_item = self.widget.getPlotItem()
