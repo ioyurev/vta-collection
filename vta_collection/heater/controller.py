@@ -52,6 +52,7 @@ class HeaterController(QtCore.QObject):
         log.debug("Stopping loop thread")
         self.set_meas_connection(False)
         self.loop.set_enabled(False)
+        self.loop.set_output(0.0)
         self.loop.stop_thread()
 
     def start_heating(self):
@@ -71,7 +72,6 @@ class HeaterController(QtCore.QObject):
     def reset_heating(self):
         log.debug("Heating reset")
         self.loop.heater.reset()
-        self.loop.set_output(0.0)
 
     def set_speed(self, value: int):
         self.loop.heater.set_speed(value=value)
