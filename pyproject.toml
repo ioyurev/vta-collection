@@ -1,6 +1,6 @@
 [project]
 name = "vta-collection"
-version = "0.1.0"
+version = "0.2.0"
 description = "VTА collection application"
 authors = [
     {name = "Ilya O. Yurev",email = "i.o.yurev@yandex.ru"}
@@ -32,7 +32,7 @@ pyinstaller = "^6.13.0"
 pillow = "^11.2.1"
 
 [tool.commitizen]
-version = "0.1.0"
+version = "0.2.0"
 version_files = [
     "vta_collection/__version__.py",
     "pyproject.toml:version"
