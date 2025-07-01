@@ -1,5 +1,6 @@
 # from vta_collection.config import config
 import warnings
+from collections import deque
 
 from loguru import logger as log
 from pglive.sources.live_plot_widget import LivePlotWidget
@@ -21,9 +22,6 @@ def clear_layout(layout: QtWidgets.QVBoxLayout):
         widget.deleteLater()
         del item
     log.debug("Layout cleared")
-
-
-last_time = 0.0
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -97,22 +95,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 delattr(self, attr)
 
     def set_meas(self, meas: Measurement):
+        window_size = 25
+        intervals: deque = deque(maxlen=window_size)
+        last_time_closure = 0.0
+
+        def sampling_rate(data: DataPoint):
+            nonlocal last_time_closure
+            try:
+                # Skip the first interval because last_time_closure is 0.0 initially
+                if last_time_closure != 0.0:
+                    current_interval = data.t1 - last_time_closure
+                    intervals.append(current_interval)
+                last_time_closure = data.t1
+
+                # If we have intervals, compute the average
+                if intervals:
+                    average_interval = sum(intervals) / len(intervals)
+                    sample_rate = 1 / average_interval
+                    self.label_sampling_rate.setText(f"{sample_rate:.1f}")
+            except ZeroDivisionError:
+                pass
+
         def update_display_cal(data: DataPoint):
-            global last_time
             self.label_input.setText(f"{data.emf:.3f}")
             self.label_output.setText(f"{data.output:.3f}")
             self.label_temp_value.setText(f"{meas.cal.get_value(data.emf):.1f}")  # type: ignore[union-attr]
-            sample_rate = 1 / (data.t1 - last_time)
-            self.label_sampling_rate.setText(f"{sample_rate:.2f}")
-            last_time = data.t1
+            sampling_rate(data=data)
 
         def update_display_no_cal(data: DataPoint):
-            global last_time
             self.label_input.setText(f"{data.emf:.3f}")
             self.label_output.setText(f"{data.output:.3f}")
-            sample_rate = 1 / (data.t1 - last_time)
-            self.label_sampling_rate.setText(f"{sample_rate:.1f}")
-            last_time = data.t1
+            sampling_rate(data=data)
 
         self.clear_plot_widgets()
 
