@@ -26,6 +26,9 @@ class Heater:
                 self.t0 = last_t
                 return
             self.output += self.heat_speed * (last_t - self.t0)
+            # Add protection against negative values
+            if self.output < 0:
+                self.output = 0.0
             self.t0 = last_t
             self.loop.set_output(value=self.output)
 
