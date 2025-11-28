@@ -38,6 +38,7 @@ class DataPoint(NamedTuple):
 class Metadata(BaseModel):
     sample: str
     operator: str
+    calibration_id: Optional[str] = None  # ID выбранной калибровки
     created_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -103,6 +104,12 @@ class Measurement(QtCore.QObject):
 
     def _export_to_zip(self, path: Path):
         with ZipFile(path, "w", ZIP_DEFLATED) as zipf:
+            # Устанавливаем ID калибровки в metadata перед сохранением
+            if self.cal is not None and self.cal.name is not None:
+                self.metadata.calibration_id = self.cal.name
+            else:
+                self.metadata.calibration_id = None
+
             self.metadata.created_at = datetime.now()
             metadata_json = self.metadata.model_dump_json(indent=2)
             zipf.writestr("metadata.json", metadata_json.encode("utf-8"))
@@ -114,6 +121,7 @@ class Measurement(QtCore.QObject):
                     raise Exception("No data to save")
                 text_f.flush()
             if self.cal is not None:
+                # Сохраняем информацию о калибровке
                 with zipf.open("calibration.json", "w") as byte_f:
                     text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
                     self.cal.to_file(f=text_f)
@@ -125,3 +133,82 @@ class Measurement(QtCore.QObject):
         self.dc_temp.clear()
         self.dc_output.clear()
         self.start_time = None
+
+    @classmethod
+    def load_from_zip(cls, path: Path, metadata: Metadata) -> "Measurement":
+        """Загрузить измерение из ZIP-архива"""
+        with ZipFile(path, "r") as zipf:
+            # Загружаем калибровку, если она есть
+            cal = None
+            try:
+                with zipf.open("calibration.json") as byte_f:
+                    text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
+                    import json
+
+                    cal_data = json.load(text_f)
+                    # Валидируем коэффициенты перед созданием калибровки
+                    c0 = cal_data.get("c0", 0.0)
+                    c1 = cal_data.get("c1", 0.0)
+                    c2 = cal_data.get("c2", 0.0)
+                    c3 = cal_data.get("c3", 0.0)
+
+                    import math
+
+                    coefficients = [c0, c1, c2, c3]
+                    for i, coeff in enumerate(coefficients):
+                        if math.isnan(coeff) or math.isinf(coeff):
+                            log.error(
+                                f"Некорректный коэффициент c{i} в калибровке из архива: {coeff}"
+                            )
+                            raise ValueError(f"Invalid coefficient c{i}: {coeff}")
+
+                    cal = Calibration(
+                        c0=c0,
+                        c1=c1,
+                        c2=c2,
+                        c3=c3,
+                        name=cal_data.get("name"),
+                        description=cal_data.get("description", ""),
+                    )
+            except KeyError:
+                # Калибровка не найдена в архиве, пробуем загрузить по ID из metadata
+                log.info(
+                    "Calibration not found in archive, trying to load by ID from metadata"
+                )
+                if metadata.calibration_id is not None:
+                    # Импортируем CalibrationManager для загрузки калибровки по ID
+                    from vta_collection.calibration_manager import (
+                        get_calibration_manager,
+                    )
+
+                    calibration_manager = get_calibration_manager()
+
+                    cal = calibration_manager.get_cached_calibration(
+                        metadata.calibration_id
+                    )
+                    if cal is None:
+                        log.warning(
+                            f"Calibration with ID '{metadata.calibration_id}' not found in calibration manager"
+                        )
+            except ValueError as e:
+                log.error(f"Invalid calibration data in archive: {e}")
+                # Пробуем загрузить по ID из metadata как fallback
+                if metadata.calibration_id is not None:
+                    from vta_collection.calibration_manager import (
+                        get_calibration_manager,
+                    )
+
+                    calibration_manager = get_calibration_manager()
+                    cal = calibration_manager.get_cached_calibration(
+                        metadata.calibration_id
+                    )
+                    if cal is None:
+                        log.warning(
+                            f"Fallback calibration with ID '{metadata.calibration_id}' also not found"
+                        )
+            except Exception as e:
+                log.error(f"Error loading calibration: {e}")
+
+        # Создаем новое измерение с загруженными данными
+        measurement = cls(metadata=metadata, cal=cal)
+        return measurement

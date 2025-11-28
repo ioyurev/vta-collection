@@ -8,6 +8,8 @@ from PySide6 import QtCore, QtWidgets
 
 from vta_collection.about_window import AboutWindow
 from vta_collection.calibration import Calibration
+from vta_collection.calibration_manager import get_calibration_manager
+from vta_collection.calibration_manager_window import CalibrationManagerWindow
 from vta_collection.config import CONFIG_EDITOR_IGNORE_FIELDS, config
 from vta_collection.config_editor import ConfigEditor
 from vta_collection.measurement import DataPoint, Measurement
@@ -49,6 +51,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.action_config.triggered.connect(self.config_editor.show)
 
+        # Добавляем функциональность для работы с калибровками
+        self.calibration_manager_window = CalibrationManagerWindow(parent=self)
+        self.btn_manage_calibrations.clicked.connect(
+            self.calibration_manager_window.show
+        )
+        # Подключаем сигнал обновления калибровок
+        self.calibration_manager_window.calibration_changed.connect(
+            self.update_active_calibration_display
+        )
+        self.update_active_calibration_display()
+
     def new_meas(self):
         self.action_new.setEnabled(False)
         self.action_save.setEnabled(False)
@@ -83,6 +96,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.plot_layout.addWidget(self.w_emf)
             self.label_temp.setVisible(False)
             self.label_temp_value.setVisible(False)
+            self.label_calibration.setVisible(False)
+
+    def update_active_calibration_display(self):
+        """Обновить отображение активной калибровки"""
+        calibration_manager = get_calibration_manager()
+        active_cal = calibration_manager.get_active_calibration()
+        if active_cal:
+            self.label_calibration.setText(active_cal.to_formule_str())
+            self.label_calibration.setVisible(True)
+        else:
             self.label_calibration.setVisible(False)
 
     def clear_plot_widgets(self):
