@@ -146,30 +146,8 @@ class Measurement(QtCore.QObject):
                     import json
 
                     cal_data = json.load(text_f)
-                    # Валидируем коэффициенты перед созданием калибровки
-                    c0 = cal_data.get("c0", 0.0)
-                    c1 = cal_data.get("c1", 0.0)
-                    c2 = cal_data.get("c2", 0.0)
-                    c3 = cal_data.get("c3", 0.0)
-
-                    import math
-
-                    coefficients = [c0, c1, c2, c3]
-                    for i, coeff in enumerate(coefficients):
-                        if math.isnan(coeff) or math.isinf(coeff):
-                            log.error(
-                                f"Некорректный коэффициент c{i} в калибровке из архива: {coeff}"
-                            )
-                            raise ValueError(f"Invalid coefficient c{i}: {coeff}")
-
-                    cal = Calibration(
-                        c0=c0,
-                        c1=c1,
-                        c2=c2,
-                        c3=c3,
-                        name=cal_data.get("name"),
-                        description=cal_data.get("description", ""),
-                    )
+                    # Создаем калибровку с использованием статического метода
+                    cal = Calibration.from_dict(cal_data)
             except KeyError:
                 # Калибровка не найдена в архиве, пробуем загрузить по ID из metadata
                 log.info(

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Dict, Union
 
 from PySide6.QtCore import QMetaObject
 from PySide6.QtWidgets import (
@@ -18,6 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from serial.tools.list_ports import comports
+
+# Тип для значений по умолчанию
+DefaultValueType = Union[str, int, float, bool, Path]
 
 if TYPE_CHECKING:
     from vta_collection.config import Config
@@ -68,11 +71,13 @@ class ConfigEditor(QDialog):
         QMetaObject.connectSlotsByName(self)
         self.accepted.connect(self.apply_config)
 
-    def create_widget(self, field_name: str, field_type: type, default_value: Any):
+    def create_widget(
+        self, field_name: str, field_type: type, default_value: DefaultValueType
+    ):
         """Создает виджет в зависимости от типа поля и его имени"""
         # Специальная обработка для поля comport
         if field_name == "comport" and field_type is str:
-            return ComPortPicker(default_value)
+            return ComPortPicker(str(default_value))
 
         if field_type is bool:
             checkbox = QCheckBox()

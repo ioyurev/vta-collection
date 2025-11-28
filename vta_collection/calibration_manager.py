@@ -21,7 +21,7 @@ class CalibrationManager(QtCore.QObject):
     calibration_updated = QtCore.Signal(str)
     active_calibration_changed = QtCore.Signal(str)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.calibrations: Dict[str, Calibration] = {}
         self._calibration_cache: Dict[str, Calibration] = {}  # Кэш для оптимизации
@@ -46,7 +46,7 @@ class CalibrationManager(QtCore.QObject):
         appdata_path = Path(os.path.join(appdata_folder, app_folder))
         return appdata_path / "calibrations"
 
-    def _ensure_calibrations_dir(self):
+    def _ensure_calibrations_dir(self) -> None:
         """Создать директорию для калибровок, если она не существует"""
         if not self.calibrations_dir.exists():
             self.calibrations_dir.mkdir(parents=True, exist_ok=True)
@@ -62,27 +62,13 @@ class CalibrationManager(QtCore.QObject):
             return False
         return True
 
-    def _validate_calibration_coefficients(self, calibration: Calibration) -> bool:
-        """Проверить валидность коэффициентов калибровки"""
-        import math
-
-        coefficients = [calibration.c0, calibration.c1, calibration.c2, calibration.c3]
-        for coeff in coefficients:
-            if math.isnan(coeff) or math.isinf(coeff):
-                return False
-        return True
-
     def save_calibration(
         self, name: str, calibration: Calibration, description: str = ""
-    ):
+    ) -> None:
         """Сохранить калибровку в файл"""
         # Валидация имени
         if not self._validate_calibration_name(name):
             raise ValueError(f"Некорректное имя калибровки: {name}")
-
-        # Валидация коэффициентов
-        if not self._validate_calibration_coefficients(calibration):
-            raise ValueError("Некорректные коэффициенты калибровки")
 
         try:
             cal_data = {
@@ -128,41 +114,21 @@ class CalibrationManager(QtCore.QObject):
             with open(file_path, "r", encoding="utf-8") as f:
                 cal_data = json.load(f)
 
-            # Валидация данных из файла
-            c0 = cal_data.get("c0", 0.0)
-            c1 = cal_data.get("c1", 0.0)
-            c2 = cal_data.get("c2", 0.0)
-            c3 = cal_data.get("c3", 0.0)
-
-            # Проверяем валидность коэффициентов
-            import math
-
-            coefficients = [c0, c1, c2, c3]
-            for i, coeff in enumerate(coefficients):
-                if math.isnan(coeff) or math.isinf(coeff):
-                    log.error(
-                        f"Некорректный коэффициент c{i} в калибровке '{name}': {coeff}"
-                    )
-                    return None
-
-            calibration = Calibration(
-                c0=c0,
-                c1=c1,
-                c2=c2,
-                c3=c3,
-                name=cal_data.get("name"),
-                description=cal_data.get("description", ""),
-            )
+            # Создаем калибровку с использованием статического метода
+            calibration = Calibration.from_dict(cal_data)
 
             self.calibrations[name] = calibration
             # Добавляем в кэш
             self._calibration_cache[name] = calibration
             return calibration
+        except ValueError as e:
+            log.error(f"Ошибка валидации калибровки '{name}': {e}")
+            return None
         except Exception as e:
             log.error(f"Ошибка при загрузке калибровки '{name}': {e}")
             return None
 
-    def load_all_calibrations(self):
+    def load_all_calibrations(self) -> None:
         """Загрузить все доступные калибровки из директории"""
         self.calibrations.clear()
         try:
@@ -173,7 +139,7 @@ class CalibrationManager(QtCore.QObject):
         except Exception as e:
             log.error(f"Ошибка при загрузке калибровок: {e}")
 
-    def delete_calibration(self, name: str):
+    def delete_calibration(self, name: str) -> None:
         """Удалить калибровку"""
         try:
             if name in self.calibrations:
