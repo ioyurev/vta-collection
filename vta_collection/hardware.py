@@ -38,11 +38,11 @@ class Hardware:
 _hardware: Optional[Hardware] = None
 
 
-def get_hardware() -> Hardware:
+def get_hardware(auto_find: bool = False) -> Hardware:
     """Получить экземпляр Hardware (singleton)"""
     global _hardware
     if _hardware is None:
         _hardware = Hardware()
-    if not _hardware.found:
+    if auto_find and not _hardware.found:
         _hardware.find()
     return _hardware

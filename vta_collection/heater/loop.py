@@ -76,7 +76,7 @@ class AbstractLoop(QtCore.QThread):
 class RealLoop(AbstractLoop):
     def __init__(self):
         super().__init__()
-        hardware = get_hardware()
+        hardware = get_hardware(auto_find=False)
         self.adam4011 = hardware.adam4011
         self.adam4021 = hardware.adam4021
 

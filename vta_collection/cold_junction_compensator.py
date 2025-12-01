@@ -23,9 +23,14 @@ class ColdJunctionCompensator:
 
     def _initialize_compensation(self):
         """Инициализация данных компенсации холодного спая"""
+        # Остановливаем основной цикл перед запросом cjc
+        from vta_collection.heater.controller import get_heater
+
+        get_heater().stop_loop()
+
         # Получаем температуру холодного спая
         cjc_temp = (
-            get_hardware().adam4011.get_cjc_temperature()
+            get_hardware(auto_find=True).adam4011.get_cjc_temperature()
             if not config.is_test_mode
             else 25.0
         )

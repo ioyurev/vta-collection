@@ -264,7 +264,7 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
                 ]  # [coefficients[2], coefficients[1], coefficients[0]]
 
             # Диапазон для построения кривой по Tэксп с использованием numpy
-            x_min, x_max = t_exp.min(), t_exp.max()
+            x_min, x_max = 0, t_exp.max()
             x_range = np.linspace(x_min, x_max, 1000)
 
             # Векторизованное вычисление разницы с использованием polyval

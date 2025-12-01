@@ -3,7 +3,7 @@ import sys
 # from loguru import logger as log
 from PySide6 import QtWidgets
 
-from vta_collection.heater.controller import HeaterController
+from vta_collection.heater.controller import get_heater
 from vta_collection.helpers import set_excepthook
 from vta_collection.main_window import MainWindow
 from vta_collection.measurement import Measurement
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     set_excepthook()
 
     w = MainWindow()
-    h = HeaterController(parent=app)
+    h = get_heater(parent=app)
 
     def set_meas(meas: Measurement):
         w.new_meas()

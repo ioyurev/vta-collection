@@ -71,3 +71,14 @@ class HeaterController(QtCore.QObject):
     def set_speed(self, value: int):
         self.loop.heater.set_speed(value=value)
         log.debug(f"Heat speed changed to {value}")
+
+
+_heater: Optional[HeaterController] = None
+
+
+def get_heater(parent=None) -> HeaterController:
+    """Получить экземпляр HeaterController (singleton)"""
+    global _heater
+    if _heater is None:
+        _heater = HeaterController(parent)
+    return _heater
