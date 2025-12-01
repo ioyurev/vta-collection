@@ -1,17 +1,14 @@
 import math
 import time
 from abc import abstractmethod
-from typing import TYPE_CHECKING
 
 from PySide6 import QtCore
 
+from vta_collection.hardware import get_hardware
 from vta_collection.heater.heater import Heater
 from vta_collection.measurement import DataPoint
 
 TEST_INTERVAL = 0.1
-
-if TYPE_CHECKING:
-    from vta_collection.heater.controller import HeaterController
 
 
 class LoopException(Exception):
@@ -77,18 +74,18 @@ class AbstractLoop(QtCore.QThread):
 
 
 class RealLoop(AbstractLoop):
-    controller: "HeaterController"
-
-    def __init__(self, controller: "HeaterController"):
+    def __init__(self):
         super().__init__()
-        self.controller = controller
+        hardware = get_hardware()
+        self.adam4011 = hardware.adam4011
+        self.adam4021 = hardware.adam4021
 
     def get_data(self):
-        return self.controller.adam4011.get_data()
+        return self.adam4011.get_data()
 
     def set_output(self, value: float):
         try:
-            self.controller.adam4021.set_output(value=value)
+            self.adam4021.set_output(value=value)
         except Exception as e:
             self.error_occurred.emit(OutputException(e))
 

@@ -5,7 +5,6 @@ from loguru import logger as log
 from PySide6 import QtCore
 
 from vta_collection.config import config
-from vta_collection.hardware import get_hardware
 from vta_collection.heater.loop import RealLoop, TestLoop
 from vta_collection.measurement import DataPoint, Measurement
 
@@ -16,9 +15,6 @@ class HeaterController(QtCore.QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        hardware = get_hardware()
-        self.adam4011 = hardware.adam4011
-        self.adam4021 = hardware.adam4021
         if config.is_test_mode:
             self.loop = TestLoop()
         else:
