@@ -3,10 +3,8 @@ import sys
 # from loguru import logger as log
 from PySide6 import QtWidgets
 
-from vta_collection.adam_4011 import Adam4011
-from vta_collection.adam_4021 import Adam4021
-from vta_collection.adam_4520 import Adam4520
 from vta_collection.config import config
+from vta_collection.hardware import get_hardware
 from vta_collection.heater.controller import HeaterController
 from vta_collection.helpers import set_excepthook
 from vta_collection.main_window import MainWindow
@@ -50,13 +48,8 @@ if __name__ == "__main__":
     set_excepthook()
 
     w = MainWindow()
-
-    adam4520 = Adam4520()
-    adam4011 = Adam4011(converter=adam4520, address=config.adam4011_address)
-    adam4021 = Adam4021(converter=adam4520, address=config.adam4021_address)
-    adam4520.modules = (adam4011, adam4021)
-
-    h = HeaterController(adam4011=adam4011, adam4021=adam4021, parent=app)
+    adam4520 = get_hardware().adam4520
+    h = HeaterController(parent=app)
 
     def set_meas(meas: Measurement):
         if not config.is_test_mode:

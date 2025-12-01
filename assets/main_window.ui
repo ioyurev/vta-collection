@@ -34,13 +34,6 @@
         </property>
        </spacer>
       </item>
-      <item row="9" column="1">
-       <widget class="QLabel" name="label_output">
-        <property name="text">
-         <string>0.0</string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0" colspan="2">
        <layout class="QHBoxLayout" name="calibration_layout">
         <item>
@@ -53,13 +46,6 @@
         <item>
          <widget class="QLabel" name="label_current_calibration"/>
         </item>
-        <item>
-         <widget class="QPushButton" name="btn_manage_calibrations">
-          <property name="text">
-           <string>Manage</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
       <item row="3" column="0" colspan="2">
@@ -69,23 +55,10 @@
         </property>
        </widget>
       </item>
-      <item row="10" column="0">
-       <widget class="QLabel" name="label">
+      <item row="4" column="0" colspan="2">
+       <widget class="QLabel" name="label_operator">
         <property name="text">
-         <string>Heating speed, mV/s</string>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="0">
-       <widget class="QPushButton" name="btn_stop">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string> Stop</string>
-        </property>
-        <property name="icon">
-         <iconset theme="QIcon::ThemeIcon::MediaPlaybackStop"/>
+         <string>Operator: </string>
         </property>
        </widget>
       </item>
@@ -96,41 +69,69 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
-       <widget class="QLabel" name="label_input">
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Sampling rate (Hz):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLabel" name="label_sampling_rate">
+        <property name="text">
+         <string>10</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_cjc_temp">
+        <property name="text">
+         <string>CJC Temperature (ºC):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="label_cjc_temp_value">
         <property name="text">
          <string>0.0</string>
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_cjc_emf">
+        <property name="text">
+         <string>CJC EMF (mV):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QLabel" name="label_cjc_emf_value">
+        <property name="text">
+         <string>0.0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
        <widget class="QLabel" name="label_temp">
         <property name="text">
          <string>Temperature (ºC):</string>
         </property>
        </widget>
       </item>
-      <item row="9" column="0">
-       <widget class="QPushButton" name="btn_output">
+      <item row="9" column="1">
+       <widget class="QLabel" name="label_temp_value">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
-         <string>Output (V):</string>
+         <string>0.0</string>
         </property>
        </widget>
       </item>
-      <item row="11" column="0">
-       <widget class="QPushButton" name="btn_start">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string> Start</string>
-        </property>
-        <property name="icon">
-         <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart"/>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0">
+      <item row="10" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>Input (mV):</string>
@@ -138,6 +139,34 @@
        </widget>
       </item>
       <item row="10" column="1">
+       <widget class="QLabel" name="label_input">
+        <property name="text">
+         <string>0.0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0">
+       <widget class="QPushButton" name="btn_output_display">
+        <property name="text">
+         <string>Output (V):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="1">
+       <widget class="QLabel" name="label_output_value">
+        <property name="text">
+         <string>0.0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Heating speed, mV/s</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="1">
        <widget class="QSpinBox" name="sb_speed">
         <property name="enabled">
          <bool>true</bool>
@@ -154,6 +183,32 @@
        </widget>
       </item>
       <item row="13" column="0">
+       <widget class="QPushButton" name="btn_start">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string> Start</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart"/>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="0">
+       <widget class="QPushButton" name="btn_stop">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string> Stop</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::MediaPlaybackStop"/>
+        </property>
+       </widget>
+      </item>
+      <item row="15" column="0">
        <widget class="QPushButton" name="btn_stop_heat">
         <property name="enabled">
          <bool>false</bool>
@@ -166,39 +221,18 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0" colspan="2">
-       <widget class="QLabel" name="label_operator">
-        <property name="text">
-         <string>Operator: </string>
+      <item row="16" column="1">
+       <spacer name="verticalSpacer1">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
         </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QLabel" name="label_sampling_rate">
-        <property name="text">
-         <string>10</string>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
         </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QLabel" name="label_temp_value">
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>0.0</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Sampling rate (Hz):</string>
-        </property>
-       </widget>
+       </spacer>
       </item>
      </layout>
     </item>
@@ -223,16 +257,30 @@
      <height>33</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>File</string>
     </property>
     <addaction name="action_new"/>
     <addaction name="action_save"/>
+    <addaction name="action_close"/>
+   </widget>
+   <widget class="QMenu" name="menu_settings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
     <addaction name="action_config"/>
+    <addaction name="action_manage_calibrations"/>
+   </widget>
+   <widget class="QMenu" name="menu_help">
+    <property name="title">
+     <string>Help</string>
+    </property>
     <addaction name="action_about"/>
    </widget>
-   <addaction name="menu"/>
+   <addaction name="menu_file"/>
+   <addaction name="menu_settings"/>
+   <addaction name="menu_help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_new">
@@ -254,14 +302,6 @@
     <string>Save</string>
    </property>
   </action>
-  <action name="action_cal">
-   <property name="icon">
-    <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
-   </property>
-   <property name="text">
-    <string>Калибровка</string>
-   </property>
-  </action>
   <action name="action_close">
    <property name="enabled">
     <bool>false</bool>
@@ -270,7 +310,7 @@
     <iconset theme="QIcon::ThemeIcon::WindowClose"/>
    </property>
    <property name="text">
-    <string>Закрыть</string>
+    <string>Close</string>
    </property>
   </action>
   <action name="action_about">
@@ -287,6 +327,14 @@
    </property>
    <property name="text">
     <string>Configuration</string>
+   </property>
+  </action>
+  <action name="action_manage_calibrations">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
+   </property>
+   <property name="text">
+    <string>Manage Calibrations</string>
    </property>
   </action>
  </widget>

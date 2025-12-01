@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from PySide6.QtCore import QMetaObject
+from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -9,8 +10,8 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QFileDialog,
-    QFormLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QSpinBox,
@@ -19,8 +20,10 @@ from PySide6.QtWidgets import (
 )
 from serial.tools.list_ports import comports
 
-# Тип для значений по умолчанию
-DefaultValueType = Union[str, int, float, bool, Path]
+# Типы для значений по умолчанию
+StringValueType = Union[str, Path]
+NumberValueType = Union[int, float]
+ThermocoupleValueType = list[float]
 
 if TYPE_CHECKING:
     from vta_collection.config import Config
@@ -33,17 +36,33 @@ class ConfigEditor(QDialog):
         super().__init__(parent)
         self.config_instance = config_instance
         self.fields: Dict[
-            str, ComPortPicker | QDoubleSpinBox | QLineEdit | QCheckBox | PathPicker
+            str,
+            ComPortPicker
+            | QDoubleSpinBox
+            | QLineEdit
+            | QCheckBox
+            | PathPicker
+            | ThermocoupleCoefficientsPicker,
         ] = {}
         self.ignore_fields = ignore_fields
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle("Configuration")
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(600)  # Увеличим ширину для двух колонок
 
         main_layout = QVBoxLayout(self)
-        form_layout = QFormLayout()
+
+        # Создаем горизонтальный layout для двух колонок
+        horizontal_layout = QHBoxLayout()
+
+        # Левая колонка (будет растягиваться)
+        left_layout = QVBoxLayout()
+        left_layout.setSpacing(5)
+
+        # Правая колонка (останется компактной)
+        right_layout = QVBoxLayout()
+        right_layout.setSpacing(5)
 
         # Создаем поля для каждого атрибута модели
         for field_name, field_info in type(self.config_instance).model_fields.items():
@@ -53,10 +72,24 @@ class ConfigEditor(QDialog):
             default_value = getattr(self.config_instance, field_name)
 
             # Создаем соответствующий виджет
-            widget = self.create_widget(field_name, field_type, default_value)
+            widget = self.create_widget(field_name, field_type, default_value)  # type: ignore
             if widget:
-                self.fields[field_name] = widget
-                form_layout.addRow(field_name, widget)
+                self.fields[field_name] = widget  # type: ignore
+                if field_name == "thermocouple_coefficients":
+                    right_layout.addWidget(QLabel(field_name))
+                    right_layout.addWidget(widget)
+                else:
+                    # Создаем горизонтальный layout для одной строки левой колонки
+                    row_layout = QHBoxLayout()
+                    row_layout.addWidget(QLabel(field_name))
+                    row_layout.addWidget(widget)
+                    left_layout.addLayout(row_layout)
+
+        # Добавляем колонки в горизонтальный layout
+        horizontal_layout.addLayout(left_layout, 1)  # stretch=1 (растягивается)
+        horizontal_layout.addLayout(right_layout, 0)  # stretch=0 (компактно)
+
+        main_layout.addLayout(horizontal_layout)
 
         # Добавляем кнопки
         button_box = QDialogButtonBox(
@@ -65,14 +98,16 @@ class ConfigEditor(QDialog):
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
 
-        main_layout.addLayout(form_layout)
         main_layout.addWidget(button_box)
 
         QMetaObject.connectSlotsByName(self)
         self.accepted.connect(self.apply_config)
 
     def create_widget(
-        self, field_name: str, field_type: type, default_value: DefaultValueType
+        self,
+        field_name: str,
+        field_type: type,
+        default_value: Union[str, int, float, bool, Path, list],
     ):
         """Создает виджет в зависимости от типа поля и его имени"""
         # Специальная обработка для поля comport
@@ -81,14 +116,14 @@ class ConfigEditor(QDialog):
 
         if field_type is bool:
             checkbox = QCheckBox()
-            checkbox.setChecked(default_value)
+            checkbox.setChecked(bool(default_value))
             return checkbox
 
         elif field_type in (int, float):
             spinbox = QSpinBox() if field_type is int else QDoubleSpinBox()
             spinbox.setMinimum(-1000000)
             spinbox.setMaximum(1000000)
-            spinbox.setValue(default_value)
+            spinbox.setValue(default_value)  # type: ignore
             return spinbox
 
         elif field_type is str:
@@ -97,6 +132,11 @@ class ConfigEditor(QDialog):
 
         elif field_type == Path:
             return PathPicker(str(default_value))
+
+        elif field_name == "thermocouple_coefficients" and isinstance(
+            default_value, list
+        ):
+            return ThermocoupleCoefficientsPicker(default_value)
 
         return None
 
@@ -109,10 +149,12 @@ class ConfigEditor(QDialog):
 
             if isinstance(widget, (ComPortPicker, PathPicker)):
                 result[field_name] = widget.value()
+            elif isinstance(widget, ThermocoupleCoefficientsPicker):
+                result[field_name] = widget.value()  # type: ignore
             elif field_type is bool:
-                result[field_name] = widget.isChecked()
+                result[field_name] = widget.isChecked()  # type: ignore
             elif field_type in (int, float):
-                result[field_name] = widget.value()
+                result[field_name] = widget.value()  # type: ignore
             elif field_type is str:
                 result[field_name] = widget.text()
 
@@ -123,6 +165,80 @@ class ConfigEditor(QDialog):
         for key, value in new_values.items():
             setattr(self.config_instance, key, value)
         self.config_instance.update()
+
+
+class ThermocoupleCoefficientsPicker(QWidget):
+    """Виджет для редактирования коэффициентов термопары"""
+
+    def __init__(self, default_coefficients: list[float], parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.coefficients_layout = QVBoxLayout()
+        layout.addLayout(self.coefficients_layout)
+
+        # Кнопки управления
+        buttons_layout = QHBoxLayout()
+        self.btn_add = QPushButton("Add Coefficient")
+        buttons_layout.addWidget(self.btn_add)
+        layout.addLayout(buttons_layout)
+
+        # Заполняем виджеты коэффициентами
+        for i, coeff in enumerate(default_coefficients):
+            self.add_coefficient_widget(coeff, i)
+
+        self.btn_add.clicked.connect(self.add_coefficient_widget)
+
+    def add_coefficient_widget(self, value: float = 0.0, index: Optional[int] = None):
+        """Добавить виджет для коэффициента"""
+        # Создаем горизонтальный layout для одной строки
+        row_layout = QHBoxLayout()
+        row_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Номер коэффициента
+        current_index = index if index is not None else self.coefficients_layout.count()
+        label = QLabel(f"C{current_index}:")
+        row_layout.addWidget(label)
+
+        # Поле ввода
+        widget = QLineEdit(str(value))
+        widget.setValidator(QDoubleValidator())
+        row_layout.addWidget(widget, 1)
+
+        # Кнопка удаления
+        btn_remove = QPushButton("Remove")
+        btn_remove.clicked.connect(lambda: self.remove_coefficient(row_layout))
+        row_layout.addWidget(btn_remove)
+
+        # Добавляем строку в общий layout
+        self.coefficients_layout.addLayout(row_layout)
+
+    def remove_coefficient(self, row_layout: QHBoxLayout):
+        """Удалить одну строку коэффициента"""
+        # Удаляем все виджеты в строке
+        while row_layout.count():
+            widget = row_layout.takeAt(0).widget()
+            if widget:
+                widget.deleteLater()
+        # Удаляем сам layout
+        self.coefficients_layout.removeItem(row_layout)
+
+    def value(self) -> list[float]:
+        """Получить значения коэффициентов"""
+        coefficients = []
+        for i in range(self.coefficients_layout.count()):
+            row_layout = self.coefficients_layout.itemAt(i)
+            if row_layout and isinstance(row_layout, QHBoxLayout):
+                # QLineEdit находится на позиции 1 (после label)
+                widget_item = row_layout.itemAt(1)
+                if widget_item:
+                    widget = widget_item.widget()
+                    if isinstance(widget, QLineEdit):
+                        text = widget.text().strip()
+                        if text:
+                            coefficients.append(float(text))
+        return coefficients
 
 
 class ComPortPicker(QWidget):

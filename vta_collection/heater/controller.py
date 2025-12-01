@@ -4,9 +4,8 @@ from typing import Optional
 from loguru import logger as log
 from PySide6 import QtCore
 
-from vta_collection.adam_4011 import Adam4011
-from vta_collection.adam_4021 import Adam4021
 from vta_collection.config import config
+from vta_collection.hardware import get_hardware
 from vta_collection.heater.loop import RealLoop, TestLoop
 from vta_collection.measurement import DataPoint, Measurement
 
@@ -15,10 +14,11 @@ class HeaterController(QtCore.QObject):
     data_ready = QtCore.Signal(DataPoint)
     meas: Optional[Measurement] = None
 
-    def __init__(self, adam4011: Adam4011, adam4021: Adam4021, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.adam4011 = adam4011
-        self.adam4021 = adam4021
+        hardware = get_hardware()
+        self.adam4011 = hardware.adam4011
+        self.adam4021 = hardware.adam4021
         if config.is_test_mode:
             self.loop = TestLoop()
         else:

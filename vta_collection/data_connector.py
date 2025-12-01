@@ -19,7 +19,7 @@ class DataPack(NamedTuple):
     y: List
 
     def to_csv(self, f: TextIOWrapper):
-        writer = csv.writer(f, lineterminator=";\r\n")
+        writer = csv.writer(f, lineterminator=";\n")
         writer.writerow((self.x_label, self.y_label))
         writer.writerows(zip(self.x, self.y))
 
@@ -49,15 +49,16 @@ class DataCon(QtCore.QObject):
         self.widget = LivePlotWidget()
         self.widget.addItem(self.llp)
         plot_item = self.widget.getPlotItem()
-        plot_item.setLabel(axis="left", text=self.y_label)
-        plot_item.setLabel(axis="bottom", text=self.x_label)
+        if plot_item is not None:
+            plot_item.setLabel(axis="left", text=self.y_label)
+            plot_item.setLabel(axis="bottom", text=self.x_label)
 
     def save_data(self) -> None:
         self.saved_data = DataPack(
             x_label=self.x_label,
             y_label=self.y_label,
-            x=self.dc.x.copy(),
-            y=self.dc.y.copy(),
+            x=list(self.dc.x.copy()),
+            y=list(self.dc.y.copy()),
         )
 
     def append_datapoint(self, x: int | float, y: int | float) -> None:
@@ -100,8 +101,8 @@ if __name__ == "__main__":
 
             # Start data generation thread
             self.running = True
-            self.thread = Thread(target=self.generate_data)
-            self.thread.start()
+            self.work_thread = Thread(target=self.generate_data)
+            self.work_thread.start()
 
         def generate_data(self):
             """Generate random data points"""
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 
         def closeEvent(self, event):
             self.running = False
-            self.thread.join()
+            self.work_thread.join()
             event.accept()
 
     # Run the example

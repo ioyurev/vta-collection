@@ -38,6 +38,15 @@ class Adam4011(AdamBase):
     def get_cjc_status(self):
         return self.converter.send_command(cmd=self.CMD.CJC_STATUS)
 
+    def get_cjc_temperature(self) -> float:
+        """Получение температуры холодного спая, парсинг >+0023.5 в float"""
+        response = self.get_cjc_status()
+        # Парсинг ответа в формате >+0023.5
+        if response.startswith(">") and len(response) >= 8:
+            temp_str = response[1:8].strip()
+            return float(temp_str)
+        raise ValueError(f"Invalid CJC status response: {response}")
+
     def get_data(self):
         return self.parse_data(data=self.get_data_bytes())
 

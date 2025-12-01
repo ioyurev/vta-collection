@@ -7,8 +7,6 @@ from pglive.sources.live_plot_widget import LivePlotWidget
 from PySide6 import QtCore, QtWidgets
 
 from vta_collection.about_window import AboutWindow
-from vta_collection.calibration import Calibration
-from vta_collection.calibration_manager import get_calibration_manager
 from vta_collection.calibration_manager_window import CalibrationManagerWindow
 from vta_collection.config import CONFIG_EDITOR_IGNORE_FIELDS, config
 from vta_collection.config_editor import ConfigEditor
@@ -38,9 +36,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btn_start.clicked.connect(self.start_loop)
         self.btn_stop.clicked.connect(self.stop_loop)
         self.btn_stop_heat.clicked.connect(self.stop_heating)
-        self.label_temp.setVisible(False)
-        self.label_temp_value.setVisible(False)
-        self.label_calibration.setVisible(False)
         self.sb_speed.setValue(config.default_speed)
         self.about_window = AboutWindow(parent=self)
         self.action_about.triggered.connect(self.about_window.show)
@@ -53,14 +48,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Добавляем функциональность для работы с калибровками
         self.calibration_manager_window = CalibrationManagerWindow(parent=self)
-        self.btn_manage_calibrations.clicked.connect(
+        self.action_manage_calibrations.triggered.connect(
             self.calibration_manager_window.show
         )
-        # Подключаем сигнал обновления калибровок
-        self.calibration_manager_window.calibration_changed.connect(
-            self.update_active_calibration_display
-        )
-        self.update_active_calibration_display()
 
     def new_meas(self):
         self.action_new.setEnabled(False)
@@ -82,31 +72,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def stop_heating(self):
         self.sb_speed.setValue(0)
 
-    def update_cal_polynom(self, cal: Calibration):
-        self.label_calibration.setText(cal.to_formule_str())
-
     def set_live_plot(self, meas: Measurement):
-        if meas.cal is not None:
-            self.plot_layout.addWidget(self.w_temp)
-            self.label_temp.setVisible(True)
-            self.label_temp_value.setVisible(True)
-            self.label_calibration.setVisible(True)
-            self.label_calibration.setText(f"<b>{meas.cal.to_formule_str()}</b>")
-        else:
-            self.plot_layout.addWidget(self.w_emf)
-            self.label_temp.setVisible(False)
-            self.label_temp_value.setVisible(False)
-            self.label_calibration.setVisible(False)
-
-    def update_active_calibration_display(self):
-        """Обновить отображение активной калибровки"""
-        calibration_manager = get_calibration_manager()
-        active_cal = calibration_manager.get_active_calibration()
-        if active_cal:
-            self.label_calibration.setText(active_cal.to_formule_str())
-            self.label_calibration.setVisible(True)
-        else:
-            self.label_calibration.setVisible(False)
+        self.plot_layout.addWidget(self.w_temp)
+        self.label_temp.setVisible(True)
+        self.label_temp_value.setVisible(True)
+        self.label_calibration.setVisible(True)
+        self.label_calibration.setText(f"<b>{meas.cal.to_formule_str()}</b>")
 
     def clear_plot_widgets(self):
         clear_layout(self.plot_layout)
@@ -141,16 +112,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         def update_display_cal(data: DataPoint):
             self.label_input.setText(f"{data.emf:.3f}")
-            self.label_output.setText(f"{data.output:.3f}")
-            self.label_temp_value.setText(f"{meas.cal.get_value(data.emf):.1f}")  # type: ignore[union-attr]
-            sampling_rate(data=data)
+            self.label_output_value.setText(
+                f"{data.output:.3f}"
+            )  # Updated to use the new label name
+            # Используем TemperatureChain для расчета температуры
+            temp = meas.temp_chain.get_value(data.emf)
+            self.label_temp_value.setText(f"{temp:.1f}")
 
-        def update_display_no_cal(data: DataPoint):
-            self.label_input.setText(f"{data.emf:.3f}")
-            self.label_output.setText(f"{data.output:.3f}")
             sampling_rate(data=data)
 
         self.clear_plot_widgets()
+
+        # Обновляем информацию о холодном спае
+        cjc_data = meas.compensator.get_cjc_data()
+        if cjc_data:
+            self.label_cjc_temp_value.setText(f"{cjc_data.temperature:.1f}")
+            self.label_cjc_emf_value.setText(f"{cjc_data.e_cold:.3f}")
+        else:
+            self.label_cjc_temp_value.setText("N/A")
+            self.label_cjc_emf_value.setText("N/A")
+
+        # Обновляем отображение активной калибровки
+        self.label_calibration.setText(meas.cal.to_formule_str())
 
         self.w_emf = meas.dc_emf.widget
         self.w_temp = meas.dc_temp.widget
@@ -159,14 +142,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.action_save.triggered.disconnect()
         self.action_save.triggered.connect(meas.save_dialog)
         with warnings.catch_warnings(action="ignore"):
-            self.btn_output.clicked.disconnect()
-        self.btn_output.clicked.connect(self.w_out.show)
+            self.btn_output_display.clicked.disconnect()
+        self.btn_output_display.clicked.connect(self.w_out.show)
         with warnings.catch_warnings(action="ignore"):
             meas.data_ready.disconnect()
-        if meas.cal is not None:
-            meas.data_ready.connect(update_display_cal)
-        else:
-            meas.data_ready.connect(update_display_no_cal)
+        meas.data_ready.connect(update_display_cal)
 
         self.label_operator.setText(f"Operator: <b>{meas.metadata.operator}</b>")
         self.label_sample.setText(f"Sample: <b>{meas.metadata.sample}</b>")

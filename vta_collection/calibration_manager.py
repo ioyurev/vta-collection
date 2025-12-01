@@ -1,5 +1,3 @@
-import json
-import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -7,6 +5,8 @@ from loguru import logger as log
 from PySide6 import QtCore
 
 from vta_collection.calibration import Calibration
+from vta_collection.file_manager import FileManager
+from vta_collection.path_utils import get_appdata_path
 
 
 class CalibrationManager(QtCore.QObject):
@@ -24,109 +24,49 @@ class CalibrationManager(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__()
         self.calibrations: Dict[str, Calibration] = {}
-        self._calibration_cache: Dict[str, Calibration] = {}  # Кэш для оптимизации
-        self.active_calibration: Optional[Calibration] = None
-        self.active_calibration_name: Optional[str] = None
+        self.active_calibration: Calibration
+        self.active_calibration_name: str
         self.calibrations_dir = self._get_calibrations_dir()
         self._ensure_calibrations_dir()
         self.load_all_calibrations()
 
     def _get_calibrations_dir(self) -> Path:
         """Получить директорию для хранения калибровок"""
-        app_folder = "vta-collection"
-        if os.name == "nt":  # Windows
-            appdata_folder = os.getenv("APPDATA")
-            if appdata_folder is None:
-                raise RuntimeError("Не найдена папка AppData")
-        else:  # Unix-like systems
-            appdata_folder = os.environ.get(
-                "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
-            )
-
-        appdata_path = Path(os.path.join(appdata_folder, app_folder))
-        return appdata_path / "calibrations"
+        return get_appdata_path() / "calibrations"
 
     def _ensure_calibrations_dir(self) -> None:
         """Создать директорию для калибровок, если она не существует"""
         if not self.calibrations_dir.exists():
             self.calibrations_dir.mkdir(parents=True, exist_ok=True)
 
-    def _validate_calibration_name(self, name: str) -> bool:
-        """Проверить валидность имени калибровки"""
-        import re
-
-        if not name or len(name) > 100:
-            return False
-        # Проверяем, что имя содержит только безопасные символы
-        if not re.match(r"^[a-zA-Z0-9_-]+$", name):
-            return False
-        return True
-
-    def save_calibration(
-        self, name: str, calibration: Calibration, description: str = ""
-    ) -> None:
+    def save_calibration(self, calibration: Calibration) -> None:
         """Сохранить калибровку в файл"""
         # Валидация имени
-        if not self._validate_calibration_name(name):
-            raise ValueError(f"Некорректное имя калибровки: {name}")
+        name = calibration.name
+        # Используем встроенный метод сериализации Calibration
+        cal_data = calibration.model_dump()
+        file_path = self.calibrations_dir / f"{name}.json"
+        FileManager.save_json(cal_data, file_path)
 
-        try:
-            cal_data = {
-                "name": name,
-                "description": description,
-                "c0": calibration.c0,
-                "c1": calibration.c1,
-                "c2": calibration.c2,
-                "c3": calibration.c3,
-            }
+        self.calibrations[name] = calibration
+        log.debug(
+            f"Калибровка '{name}' сохранена со стандартами: {calibration.standards}"
+        )
+        self.calibration_added.emit(name)
 
-            file_path = self.calibrations_dir / f"{name}.json"
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(cal_data, f, indent=2, ensure_ascii=False)
-
-            self.calibrations[name] = calibration
-            # Обновляем кэш
-            self._calibration_cache[name] = calibration
-            log.info(f"Калибровка '{name}' сохранена")
-            self.calibration_added.emit(name)
-        except Exception as e:
-            log.error(f"Ошибка при сохранении калибровки '{name}': {e}")
-            raise
-
-    def get_cached_calibration(self, name: str) -> Optional[Calibration]:
-        """Получить калибровку из кэша или загрузить если не в кэше"""
-        if name in self._calibration_cache:
-            return self._calibration_cache[name]
-
-        calibration = self.load_calibration(name)
-        if calibration:
-            self._calibration_cache[name] = calibration
-        return calibration
-
-    def load_calibration(self, name: str) -> Optional[Calibration]:
+    def load_calibration(self, name: str) -> Calibration:
         """Загрузить калибровку из файла"""
-        try:
-            file_path = self.calibrations_dir / f"{name}.json"
-            if not file_path.exists():
-                log.warning(f"Файл калибровки '{name}' не найден")
-                return None
+        file_path = self.calibrations_dir / f"{name}.json"
+        cal_data = FileManager.load_json(file_path)
 
-            with open(file_path, "r", encoding="utf-8") as f:
-                cal_data = json.load(f)
+        # Создаем калибровку с использованием статического метода
+        calibration = Calibration.from_dict(cal_data)
 
-            # Создаем калибровку с использованием статического метода
-            calibration = Calibration.from_dict(cal_data)
-
-            self.calibrations[name] = calibration
-            # Добавляем в кэш
-            self._calibration_cache[name] = calibration
-            return calibration
-        except ValueError as e:
-            log.error(f"Ошибка валидации калибровки '{name}': {e}")
-            return None
-        except Exception as e:
-            log.error(f"Ошибка при загрузке калибровки '{name}': {e}")
-            return None
+        self.calibrations[name] = calibration
+        log.debug(
+            f"Калибровка '{name}' загружена со стандартами: {calibration.standards}"
+        )
+        return calibration
 
     def load_all_calibrations(self) -> None:
         """Загрузить все доступные калибровки из директории"""
@@ -135,7 +75,7 @@ class CalibrationManager(QtCore.QObject):
             for file_path in self.calibrations_dir.glob("*.json"):
                 name = file_path.stem
                 self.load_calibration(name)
-            log.info(f"Загружено {len(self.calibrations)} калибровок")
+            log.info(f"Загружены калибровки: {self.calibrations}")
         except Exception as e:
             log.error(f"Ошибка при загрузке калибровок: {e}")
 
@@ -145,19 +85,18 @@ class CalibrationManager(QtCore.QObject):
             if name in self.calibrations:
                 del self.calibrations[name]
 
-            # Удаляем из кэша
-            if name in self._calibration_cache:
-                del self._calibration_cache[name]
-
             file_path = self.calibrations_dir / f"{name}.json"
             if file_path.exists():
                 file_path.unlink()
 
             if self.active_calibration_name == name:
-                self.active_calibration = None
-                self.active_calibration_name = None
+                # self.active_calibration = None
+                # self.active_calibration_name = None
+                raise NotImplementedError()
 
-            log.info(f"Калибровка '{name}' удалена")
+            log.debug(
+                f"Калибровка '{name}' удалена, остались калибровки: {self.calibrations}"
+            )
             self.calibration_removed.emit(name)
         except Exception as e:
             log.error(f"Ошибка при удалении калибровки '{name}': {e}")
@@ -172,13 +111,15 @@ class CalibrationManager(QtCore.QObject):
         if name in self.calibrations:
             self.active_calibration = self.calibrations[name]
             self.active_calibration_name = name
-            log.info(f"Активная калибровка установлена на '{name}'")
+            log.debug(
+                f"Активная калибровка установлена на '{name}', тип: {self.active_calibration.calibration_type}, коэффициенты: {self.active_calibration.coefficients}"
+            )
             return True
         else:
             log.warning(f"Калибровка '{name}' не найдена")
             return False
 
-    def get_active_calibration(self) -> Optional[Calibration]:
+    def get_active_calibration(self) -> Calibration:
         """Получить активную калибровку"""
         return self.active_calibration
 
@@ -187,8 +128,7 @@ class CalibrationManager(QtCore.QObject):
         try:
             file_path = self.calibrations_dir / f"{name}.json"
             if file_path.exists():
-                with open(file_path, "r", encoding="utf-8") as f:
-                    cal_data = json.load(f)
+                cal_data = FileManager.load_json(file_path)
                 return cal_data.get("description", "")
         except Exception as e:
             log.error(f"Ошибка при получении описания калибровки '{name}': {e}")

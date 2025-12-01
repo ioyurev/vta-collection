@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from io import TextIOWrapper
 from pathlib import Path
@@ -10,8 +11,10 @@ from PySide6 import QtCore
 from PySide6.QtWidgets import QFileDialog
 
 from vta_collection.calibration import Calibration
+from vta_collection.cold_junction_compensator import ColdJunctionCompensator
 from vta_collection.config import config
 from vta_collection.data_connector import DataCon
+from vta_collection.temperature_chain import TemperatureChain
 
 
 def prompt_save_path(initial_path: Path):
@@ -38,18 +41,18 @@ class DataPoint(NamedTuple):
 class Metadata(BaseModel):
     sample: str
     operator: str
-    calibration_id: Optional[str] = None  # ID выбранной калибровки
+    vtaz_version: str = "1.0"  # Версия формата .vtaz файла
     created_at: datetime = Field(default_factory=datetime.now)
 
 
 class Measurement(QtCore.QObject):
     metadata: Metadata
-    cal: Optional[Calibration] = None
+    cal: Calibration
     data_ready = QtCore.Signal(DataPoint)
     recording_enabled = False
     start_time: Optional[float] = None
 
-    def __init__(self, metadata: Metadata, cal: Calibration | None = None):
+    def __init__(self, metadata: Metadata, cal: Calibration):
         super().__init__()
         self.metadata = metadata
         self.cal = cal
@@ -57,36 +60,30 @@ class Measurement(QtCore.QObject):
         self.dc_temp = DataCon(name="temp", y_label="Temperature, ºC", parent=self)
         self.dc_output = DataCon(name="output", y_label="Output, V", parent=self)
 
+        # Создаем компенсатор холодного спая
+        self.compensator = ColdJunctionCompensator(calibration=cal)
+
+        # Создаем цепочку обработки данных
+        self.temp_chain = TemperatureChain(cal=cal, compensator=self.compensator)
+
     def snapshot_emf(self):
         self.dc_emf.save_data()
 
     def make_data_connection(self):
-        if self.cal is not None:
-            cal = self.cal  # костыль для mypy
+        def to_data_con(data: DataPoint):
+            if not self.recording_enabled:
+                return
+            if self.start_time is None:
+                self.start_time = data.t1
+            rel_t1 = data.t1 - self.start_time
+            rel_t2 = data.t2 - self.start_time
+            self.data_ready.emit(data)
 
-            def to_data_con(data: DataPoint):
-                if not self.recording_enabled:
-                    return
-                if self.start_time is None:
-                    self.start_time = data.t1
-                rel_t1 = data.t1 - self.start_time
-                rel_t2 = data.t2 - self.start_time
-                self.data_ready.emit(data)
-                self.dc_temp.append_datapoint(x=rel_t1, y=cal.get_value(data.emf))
-                self.dc_emf.append_datapoint(x=rel_t1, y=data.emf)
-                self.dc_output.append_datapoint(x=rel_t2, y=data.output)
-        else:
-
-            def to_data_con(data: DataPoint):
-                if not self.recording_enabled:
-                    return
-                if self.start_time is None:
-                    self.start_time = data.t1
-                rel_t1 = data.t1 - self.start_time
-                rel_t2 = data.t2 - self.start_time
-                self.data_ready.emit(data)
-                self.dc_emf.append_datapoint(x=rel_t1, y=data.emf)
-                self.dc_output.append_datapoint(x=rel_t2, y=data.output)
+            # Используем TemperatureChain для получения значения
+            temp_or_emf = self.temp_chain.get_value(data.emf)
+            self.dc_temp.append_datapoint(x=rel_t1, y=temp_or_emf)
+            self.dc_emf.append_datapoint(x=rel_t1, y=data.emf)
+            self.dc_output.append_datapoint(x=rel_t2, y=data.output)
 
         return to_data_con
 
@@ -99,17 +96,11 @@ class Measurement(QtCore.QObject):
         if path:
             self._export_to_zip(path=path)
             config.last_save_measurement_index += 1
-            config.last_save_dir = str(path.parent)
+            config.last_save_dir = path.parent
             config.update()
 
     def _export_to_zip(self, path: Path):
         with ZipFile(path, "w", ZIP_DEFLATED) as zipf:
-            # Устанавливаем ID калибровки в metadata перед сохранением
-            if self.cal is not None and self.cal.name is not None:
-                self.metadata.calibration_id = self.cal.name
-            else:
-                self.metadata.calibration_id = None
-
             self.metadata.created_at = datetime.now()
             metadata_json = self.metadata.model_dump_json(indent=2)
             zipf.writestr("metadata.json", metadata_json.encode("utf-8"))
@@ -120,12 +111,26 @@ class Measurement(QtCore.QObject):
                 else:
                     raise Exception("No data to save")
                 text_f.flush()
-            if self.cal is not None:
-                # Сохраняем информацию о калибровке
-                with zipf.open("calibration.json", "w") as byte_f:
-                    text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
-                    self.cal.to_file(f=text_f)
-                    text_f.flush()
+            with zipf.open("calibration.json", "w") as byte_f:
+                text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
+                self.cal.to_file(f=text_f)
+                text_f.flush()
+            # Сохраняем коэффициенты термопары в отдельный файл
+            thermocouple_data = {
+                "thermocouple_coefficients": config.thermocouple_coefficients
+            }
+            zipf.writestr(
+                "thermocouple.json",
+                json.dumps(thermocouple_data, indent=2, ensure_ascii=False).encode(
+                    "utf-8"
+                ),
+            )
+            # Сохраняем данные холодного спая
+            cjc_data = self.compensator.export_cjc_data()
+            zipf.writestr(
+                "cjc.json",
+                json.dumps(cjc_data, indent=2, ensure_ascii=False).encode("utf-8"),
+            )
         log.debug(f"Measurement saved at {path}")
 
     def clear(self):
@@ -133,60 +138,3 @@ class Measurement(QtCore.QObject):
         self.dc_temp.clear()
         self.dc_output.clear()
         self.start_time = None
-
-    @classmethod
-    def load_from_zip(cls, path: Path, metadata: Metadata) -> "Measurement":
-        """Загрузить измерение из ZIP-архива"""
-        with ZipFile(path, "r") as zipf:
-            # Загружаем калибровку, если она есть
-            cal = None
-            try:
-                with zipf.open("calibration.json") as byte_f:
-                    text_f = TextIOWrapper(buffer=byte_f, encoding="utf-8")
-                    import json
-
-                    cal_data = json.load(text_f)
-                    # Создаем калибровку с использованием статического метода
-                    cal = Calibration.from_dict(cal_data)
-            except KeyError:
-                # Калибровка не найдена в архиве, пробуем загрузить по ID из metadata
-                log.info(
-                    "Calibration not found in archive, trying to load by ID from metadata"
-                )
-                if metadata.calibration_id is not None:
-                    # Импортируем CalibrationManager для загрузки калибровки по ID
-                    from vta_collection.calibration_manager import (
-                        get_calibration_manager,
-                    )
-
-                    calibration_manager = get_calibration_manager()
-
-                    cal = calibration_manager.get_cached_calibration(
-                        metadata.calibration_id
-                    )
-                    if cal is None:
-                        log.warning(
-                            f"Calibration with ID '{metadata.calibration_id}' not found in calibration manager"
-                        )
-            except ValueError as e:
-                log.error(f"Invalid calibration data in archive: {e}")
-                # Пробуем загрузить по ID из metadata как fallback
-                if metadata.calibration_id is not None:
-                    from vta_collection.calibration_manager import (
-                        get_calibration_manager,
-                    )
-
-                    calibration_manager = get_calibration_manager()
-                    cal = calibration_manager.get_cached_calibration(
-                        metadata.calibration_id
-                    )
-                    if cal is None:
-                        log.warning(
-                            f"Fallback calibration with ID '{metadata.calibration_id}' also not found"
-                        )
-            except Exception as e:
-                log.error(f"Error loading calibration: {e}")
-
-        # Создаем новое измерение с загруженными данными
-        measurement = cls(metadata=metadata, cal=cal)
-        return measurement

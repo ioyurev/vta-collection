@@ -1,10 +1,22 @@
+@echo off
 if not exist vta_collection\ui mkdir vta_collection\ui
-pyside6-uic assets/MainWindow.ui > vta_collection/ui/main_window.py
-pyside6-uic assets\NewMeasurementDialog.ui > vta_collection/ui/new_measurement.py
-pyside6-uic assets\CalibrationManagerDialog.ui > vta_collection/ui/calibration_manager_dialog.py
 
-autoflake -i --remove-all-unused-imports vta_collection/ui/main_window.py
-autoflake -i --remove-all-unused-imports vta_collection/ui/new_measurement.py
-autoflake -i --remove-all-unused-imports vta_collection/ui/calibration_manager_dialog.py
+REM Обработка всех UI файлов в assets/
+for %%f in (assets\*.ui) do (
+    echo Processing %%f...
+    pyside6-uic %%f > vta_collection/ui/%%~nf.py
+)
 
-pyside6-rcc assets\resources.qrc > vta_collection\ui\resources_rc.py
+REM Очистка импортов во всех сгенерированных файлах
+for %%f in (vta_collection\ui\*.py) do (
+    echo Cleaning imports in %%f...
+    autoflake -i --remove-all-unused-imports %%f
+)
+
+REM Обработка ресурсов
+if exist assets\resources.qrc (
+    echo Processing resources.qrc...
+    pyside6-rcc assets\resources.qrc > vta_collection\ui\resources_rc.py
+)
+
+echo Done!
