@@ -18,7 +18,7 @@ class HeaterController(QtCore.QObject):
         if config.is_test_mode:
             self.loop = TestLoop()
         else:
-            self.loop = RealLoop(self)
+            self.loop = RealLoop()
         self.loop.data_ready.connect(self.data_ready.emit)
         self.loop.error_occurred.connect(log.error)
 
