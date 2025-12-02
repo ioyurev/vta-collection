@@ -40,9 +40,7 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
 
         # Инициализируем таблицу
         self.table_standards.setColumnCount(3)
-        self.table_standards.setHorizontalHeaderLabels(
-            ["Name", "T theoretical", "T experimental"]
-        )
+        self.table_standards.setHorizontalHeaderLabels(["Name", "T theor", "T exp"])
         self.table_standards.horizontalHeader().setStretchLastSection(True)
 
         # Текущая калибровка
@@ -95,11 +93,11 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
         item_name = QtWidgets.QTableWidgetItem(standard.name)
         self.table_standards.setItem(row, 0, item_name)
 
-        # T theoretical
+        # T theor
         item_t_theor = QtWidgets.QTableWidgetItem(str(standard.t_theor))
         self.table_standards.setItem(row, 1, item_t_theor)
 
-        # T experimental
+        # T exp
         item_t_exp = QtWidgets.QTableWidgetItem(str(standard.t_exp))
         self.table_standards.setItem(row, 2, item_t_exp)
 
@@ -127,25 +125,21 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
         standards = []
         for row in range(self.table_standards.rowCount()):
             item_name = self.table_standards.item(row, 0)
-            item_t_theoretical = self.table_standards.item(row, 1)
-            item_t_experimental = self.table_standards.item(row, 2)
+            item_t_theor = self.table_standards.item(row, 1)
+            item_t_exp = self.table_standards.item(row, 2)
 
-            if (
-                item_name is None
-                or item_t_theoretical is None
-                or item_t_experimental is None
-            ):
+            if item_name is None or item_t_theor is None or item_t_exp is None:
                 raise ValueError(f"Empty values in row {row + 1}")
 
             name = item_name.text().strip()
             try:
-                t_theoretical = float(item_t_theoretical.text())
-                t_experimental = float(item_t_experimental.text())
+                t_theor = float(item_t_theor.text())
+                t_exp = float(item_t_exp.text())
 
                 standard = Standard(
                     name=name,
-                    t_theor=t_theoretical,
-                    t_exp=t_experimental,
+                    t_theor=t_theor,
+                    t_exp=t_exp,
                 )
                 standards.append(standard)
             except ValueError:
@@ -169,15 +163,15 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
         # Создаем основной график калибровки
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.showGrid(x=True, y=True, alpha=0.3)
-        self.plot_widget.setLabel("left", "T theoretical - T experimental", units="°C")
-        self.plot_widget.setLabel("bottom", "T experimental", units="°C")
+        self.plot_widget.setLabel("left", "T theor - T exp", units="°C")
+        self.plot_widget.setLabel("bottom", "T exp", units="°C")
         self.plot_widget.setTitle("Calibration Error Graph")
 
         # Создаем график остатков
         self.residuals_plot_widget = pg.PlotWidget()
         self.residuals_plot_widget.showGrid(x=True, y=True, alpha=0.3)
         self.residuals_plot_widget.setLabel("left", "Residuals", units="°C")
-        self.residuals_plot_widget.setLabel("bottom", "T experimental", units="°C")
+        self.residuals_plot_widget.setLabel("bottom", "T exp", units="°C")
         self.residuals_plot_widget.setTitle("Residuals Graph")
 
         # Добавляем графики в layout (создаем вертикальный layout для обоих графиков)
@@ -264,7 +258,7 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
                 ]  # [coefficients[2], coefficients[1], coefficients[0]]
 
             # Диапазон для построения кривой по Tэксп с использованием numpy
-            x_min, x_max = 0, t_exp.max()
+            x_min, x_max = 0, 2500
             x_range = np.linspace(x_min, x_max, 1000)
 
             # Векторизованное вычисление разницы с использованием polyval
@@ -298,7 +292,11 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
 
             # Настройка масштаба
             self.plot_widget.autoRange()
-            self.residuals_plot_widget.autoRange()
+            # Синхронизируем ось X между графиками
+            x_range = self.plot_widget.getViewBox().viewRange()[0]
+            self.residuals_plot_widget.getViewBox().setXRange(
+                x_range[0], x_range[1], padding=0
+            )
 
             # Обновляем отображение статистики
             self.update_statistics_display(calibration, stats)

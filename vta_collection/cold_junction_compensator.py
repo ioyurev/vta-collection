@@ -57,10 +57,6 @@ class ColdJunctionCompensator:
         """Получение данных компенсации холодного спая"""
         return self.cjc_data
 
-    def update_compensation(self):
-        """Обновление данных компенсации (если температура изменилась)"""
-        self._initialize_compensation()
-
     def export_cjc_data(self) -> dict:
         """Экспорт данных холодного спая в формате JSON"""
         return {

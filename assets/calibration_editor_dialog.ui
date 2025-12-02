@@ -121,12 +121,12 @@
           </column>
           <column>
            <property name="text">
-            <string>T theoretical</string>
+            <string>T theor</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>T experimental</string>
+            <string>T exp</string>
            </property>
           </column>
          </widget>
