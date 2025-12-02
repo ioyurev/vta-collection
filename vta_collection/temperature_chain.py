@@ -10,8 +10,8 @@ class TemperatureChain:
         # Получаем глобальный экземпляр термопары
         thermocouple = get_thermocouple()
         # Определяем функцию расчета один раз при инициализации
-        self._calculate = lambda x: thermocouple.emf_to_temperature(
-            compensator.compensate(cal.get_value(x))
+        self._calculate = lambda x: cal.get_value(thermocouple.emf_to_temperature(
+            compensator.compensate(x))
         )
 
     def get_value(self, emf: float) -> float:
