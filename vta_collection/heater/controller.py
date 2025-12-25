@@ -49,6 +49,7 @@ class HeaterController(QtCore.QObject):
         self.set_meas_connection(False)
         self.loop.set_enabled(False)
         self.loop.set_output(0.0)
+        self.stop_heating()
         self.loop.stop_thread()
 
     def start_heating(self):
