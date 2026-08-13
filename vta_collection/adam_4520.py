@@ -24,9 +24,9 @@ class Adam4520API(BaseInstrument):
             timeout=timeout,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_TWO,
+            stopbits=serial.STOPBITS_ONE,
             rtscts=False,
-            dsrdtr=True,
+            dsrdtr=False,
         )
 
     def find_on_port(self, port: str):
