@@ -218,9 +218,11 @@ class ThermocoupleCoefficientsPicker(QWidget):
         """Удалить одну строку коэффициента"""
         # Удаляем все виджеты в строке
         while row_layout.count():
-            widget = row_layout.takeAt(0).widget()
-            if widget:
-                widget.deleteLater()
+            item = row_layout.takeAt(0)
+            if item:
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
         # Удаляем сам layout
         self.coefficients_layout.removeItem(row_layout)
 

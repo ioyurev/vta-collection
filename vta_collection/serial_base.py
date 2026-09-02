@@ -4,7 +4,7 @@ import serial.tools.list_ports
 from loguru import logger as log
 
 # Обход специфического ограничения Win32 SetCommState у драйверов WCH CH340 под Windows
-_orig_reconfigure = serial.serialwin32.Serial._reconfigure_port
+_orig_reconfigure = serial.serialwin32.Serial._reconfigure_port  # type: ignore[attr-defined]
 
 
 def _safe_reconfigure_port(self):
@@ -14,7 +14,7 @@ def _safe_reconfigure_port(self):
         log.warning(f"Driver configuration warning bypassed: {e}")
 
 
-serial.serialwin32.Serial._reconfigure_port = _safe_reconfigure_port
+serial.serialwin32.Serial._reconfigure_port = _safe_reconfigure_port  # type: ignore[attr-defined]
 
 
 def get_serial_ports():

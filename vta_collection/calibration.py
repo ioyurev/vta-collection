@@ -1,5 +1,5 @@
 import math
-from typing import Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 from loguru import logger as log
@@ -91,10 +91,13 @@ class Calibration(BaseModel, SerializableMixin):
         )
         log.debug(f"Коэффициенты рассчитаны: {self.coefficients}")
 
-    def calculate_statistics(self) -> Dict[str, float]:
+    def calculate_statistics(self) -> Dict[str, Any]:
         """Рассчитать статистику калибровки"""
-        if len(self.standards) < 2:
-            raise ValueError("Для расчета статистики требуется минимум 2 стандарта")
+        min_points = 2 if self.calibration_type == "linear" else 3
+        if len(self.standards) < min_points:
+            raise ValueError(
+                f"Для расчета статистики требуется минимум {min_points} стандарта"
+            )
 
         # Получаем экспериментальные и теоретические температуры
         t_exp = np.array([s.t_exp for s in self.standards])
@@ -120,11 +123,11 @@ class Calibration(BaseModel, SerializableMixin):
         residuals = delta_t_actual - delta_t_fit
 
         # Сумма квадратов остатков
-        SS_res = np.sum(residuals**2)
+        SS_res = float(np.sum(residuals**2))
 
         # Общая сумма квадратов
         delta_t_mean = np.mean(delta_t_actual)
-        SS_tot = np.sum((delta_t_actual - delta_t_mean) ** 2)
+        SS_tot = float(np.sum((delta_t_actual - delta_t_mean) ** 2))
 
         # Количество точек и параметров
         n = len(self.standards)
@@ -132,31 +135,33 @@ class Calibration(BaseModel, SerializableMixin):
             2 if self.calibration_type == "linear" else 3
         )  # линейная: 2 параметра, квадратичная: 3 параметра
 
-        # Стандартная ошибка калибровки (SEC)
+        # Стандартная ошибка калибровки (SEC) и расширенная неопределенность
         if n > p:
-            SEC = np.sqrt(SS_res / (n - p))
+            sec_val = float(np.sqrt(SS_res / (n - p)))
+            SEC: Optional[float] = sec_val
+            expanded_uncertainty: Optional[float] = 2.0 * sec_val
         else:
-            SEC = 0.0
+            SEC = None
+            expanded_uncertainty = None
 
         # Коэффициент детерминации R²
-        if SS_tot != 0:
-            R_squared = 1 - (SS_res / SS_tot)
-        else:
+        if SS_tot > 1e-12:
+            R_squared: Optional[float] = float(1.0 - (SS_res / SS_tot))
+        elif SS_res < 1e-12:
             R_squared = 1.0
-
-        # Расширенная неопределенность (k = 2)
-        expanded_uncertainty = 2 * SEC
+        else:
+            R_squared = 0.0
 
         # Максимальная абсолютная погрешность
-        max_abs_error = np.max(np.abs(residuals)) if len(residuals) > 0 else 0.0
+        max_abs_error = float(np.max(np.abs(residuals))) if len(residuals) > 0 else 0.0
 
         return {
-            "R_squared": float(R_squared),
-            "SEC": float(SEC),
-            "expanded_uncertainty": float(expanded_uncertainty),
+            "R_squared": R_squared,
+            "SEC": SEC,
+            "expanded_uncertainty": expanded_uncertainty,
             "max_abs_error": float(max_abs_error),
-            "SS_res": float(SS_res),
-            "SS_tot": float(SS_tot),
+            "SS_res": SS_res,
+            "SS_tot": SS_tot,
             "residuals": residuals.tolist(),
             "delta_t_actual": delta_t_actual.tolist(),
             "delta_t_fit": delta_t_fit.tolist(),

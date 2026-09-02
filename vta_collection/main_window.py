@@ -18,9 +18,11 @@ def clear_layout(layout: QtWidgets.QVBoxLayout):
     # """Рекурсивно удаляет все виджеты и дочерние макеты из QLayout."""
     while layout.count():
         item = layout.takeAt(0)
-        widget = item.widget()
-        widget.deleteLater()
-        del item
+        if item:
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+            del item
     log.debug("Layout cleared")
 
 

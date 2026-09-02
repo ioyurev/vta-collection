@@ -230,7 +230,8 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
             calibration = self.get_calibration_from_ui()
             standards = calibration.standards
 
-            if len(standards) < 2:
+            min_points = 2 if calibration.calibration_type == "linear" else 3
+            if len(standards) < min_points:
                 # Недостаточно данных для построения графика
                 self.scatter_plot.setData([], [])
                 self.curve_plot.setData([], [])
@@ -276,18 +277,33 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
                     self.residuals_scatter_plot.setData(t_exp, residuals)
 
                 # Обновляем линии стандартной ошибки и неопределенности
-                SEC = stats.get("SEC", 0.0)
-                expanded_uncertainty = stats.get("expanded_uncertainty", 0.0)
+                SEC = stats.get("SEC")
+                expanded_uncertainty = stats.get("expanded_uncertainty")
 
-                self.sec_line.setValue(SEC)
-                self.neg_sec_line.setValue(-SEC)
-                self.uncertainty_line.setValue(expanded_uncertainty)
-                self.neg_uncertainty_line.setValue(-expanded_uncertainty)
+                if SEC is not None:
+                    self.sec_line.setValue(SEC)
+                    self.neg_sec_line.setValue(-SEC)
+                    self.sec_line.setVisible(True)
+                    self.neg_sec_line.setVisible(True)
+                else:
+                    self.sec_line.setVisible(False)
+                    self.neg_sec_line.setVisible(False)
+
+                if expanded_uncertainty is not None:
+                    self.uncertainty_line.setValue(expanded_uncertainty)
+                    self.neg_uncertainty_line.setValue(-expanded_uncertainty)
+                    self.uncertainty_line.setVisible(True)
+                    self.neg_uncertainty_line.setVisible(True)
+                else:
+                    self.uncertainty_line.setVisible(False)
+                    self.neg_uncertainty_line.setVisible(False)
 
                 # Обновляем заголовок графика остатков с информацией о статистике
-                R_squared = stats.get("R_squared", 0.0)
+                R_squared = stats.get("R_squared")
+                r2_str = f"{R_squared:.4f}" if R_squared is not None else "N/A"
+                sec_str = f"{SEC:.2f}°C" if SEC is not None else "N/A"
                 self.residuals_plot_widget.setTitle(
-                    f"Residuals Graph (R² = {R_squared:.4f}, SEC = {SEC:.2f}°C)"
+                    f"Residuals Graph (R² = {r2_str}, SEC = {sec_str})"
                 )
 
             # Настройка масштаба
@@ -320,11 +336,19 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
             return
 
         # Простое отображение основных статистических параметров
-        R_squared = stats.get("R_squared", 0.0)
-        SEC = stats.get("SEC", 0.0)
-        expanded_uncertainty = stats.get("expanded_uncertainty", 0.0)
+        R_squared = stats.get("R_squared")
+        SEC = stats.get("SEC")
+        expanded_uncertainty = stats.get("expanded_uncertainty")
         max_abs_error = stats.get("max_abs_error", 0.0)
         n_points = stats.get("n_points", 0)
+
+        r2_str = f"{R_squared:.4f}" if R_squared is not None else "N/A"
+        sec_str = f"{SEC:.4f} °C" if SEC is not None else "N/A (n ≤ p)"
+        unc_str = (
+            f"±{expanded_uncertainty:.4f} °C"
+            if expanded_uncertainty is not None
+            else "N/A (n ≤ p)"
+        )
 
         stats_text = f"""КАЛИБРОВКА: СТАТИСТИЧЕСКИЙ АНАЛИЗ
 ===============================
@@ -332,9 +356,9 @@ class CalibrationEditorWindow(QtWidgets.QDialog, Ui_Dialog):
 Количество точек: {n_points}
 
 ПАРАМЕТРЫ:
-R² (коэффициент детерминации): {R_squared:.4f}
-SEC (стандартная ошибка): {SEC:.4f} °C
-Расширенная неопределенность: ±{expanded_uncertainty:.4f} °C
+R² (коэффициент детерминации): {r2_str}
+SEC (стандартная ошибка): {sec_str}
+Расширенная неопределенность: {unc_str}
 Максимальная абсолютная ошибка: {max_abs_error:.4f} °C"""
 
         self.text_statistics.setPlainText(stats_text)
@@ -360,9 +384,12 @@ SEC (стандартная ошибка): {SEC:.4f} °C
             )
 
             # Проверяем, что достаточно стандартов
-            if len(calibration.standards) < 2:
+            min_points = 2 if calibration.calibration_type == "linear" else 3
+            if len(calibration.standards) < min_points:
                 QtWidgets.QMessageBox.warning(
-                    self, "Warning", "Need at least 2 standards for calibration."
+                    self,
+                    "Warning",
+                    f"Need at least {min_points} standards for {calibration.calibration_type} calibration.",
                 )
                 return
 
